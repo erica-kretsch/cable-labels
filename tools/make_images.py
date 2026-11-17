@@ -1,6 +1,6 @@
 """Generate About/Preview.png and About/thumb.png.
 
-LaunchPad needs both to register the mod. Run from the repo root:
+LaunchPad needs both to register the mod; they live in Assets/About/. Run from the repo root:
 
     python tools/make_images.py
 
@@ -119,7 +119,7 @@ def render(w, h, runs):
 
 
 def main():
-    about = ROOT / "About"
+    about = ROOT / "Assets" / "About"
     render(1280, 720, FIVE).save(about / "Preview.png", optimize=True)
     render(640, 360, THREE).save(about / "thumb.png", optimize=True)
 

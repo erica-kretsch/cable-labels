@@ -1,7 +1,33 @@
-bin
-obj
-dist
+# The Unity project is the repo root. Unity regenerates all of these.
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Bb]uild/
+/[Bb]uilds/
+/.vs/
+/.vsconfig
+/*.csproj
+/*.sln
+/*.slnx
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+crashlytics-build.properties
+
+# The game's, BepInEx's and LaunchPad's DLLs: never committed. Their .meta files stay, so
+# their import settings and GUIDs survive a fresh copy.
+/Assets/Assemblies/*.dll
+/Assets/Assemblies/*.pdb
+
+# Local machine settings and build output
+bin/
+obj/
+dist/
 *.zip
 Local.*.props
-.vs
-__pycache__
+
+# Python bytecode
+__pycache__/

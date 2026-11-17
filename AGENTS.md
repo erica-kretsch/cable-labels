@@ -20,36 +20,57 @@ Assisted-by: AGENT_NAME:MODEL_VERSION [TOOL1] [TOOL2]
 
 ## Working in this repo
 
+- **Layout.** The Unity project is the repo root, as in `../sbr-electrical`; there is no
+  `Main.csproj`, and Unity compiles the DLL that ships. Two assembly definitions:
+  - `Assets/CableLabels/` → `CableLabels`, the shipped DLL. Prefabs find their components by
+    assembly, namespace and class name, so never rename any of the three for a class a prefab
+    uses (`CableLabel`).
+  - `Assets/Editor/` → `CableLabels.Editor`: editor-only, not shipped.
 - **Git line endings.** The machine's global `core.safecrlf=true` rejects LF files on `add`,
   `commit` and `stash`. Pass `-c core.safecrlf=false` on those commands; don't change the
   config.
-- **Versioning.** `About/About.xml` is the single source of the mod ID and version: the build
-  generates `ThisModInfo` from it (`GenerateModInfo` in `Main.props`).
-- **Local paths.** The game's DLL folder and the install folder go in the gitignored
-  `Local.Developer.props`. Local installs go to LaunchPad's mods folder
-  (`%USERPROFILE%\Documents\My Games\Stationeers\mods\CableLabels\`), never `BepInEx/plugins`.
-- **One source tree, two compiles.** The sources live in the Unity project, in
-  `src/Assets/CableLabels/`, under an assembly definition named `CableLabels`, the same name as
-  the DLL that ships. Prefabs find their components by assembly, namespace and class name, so
-  never rename any of the three for a class a prefab uses. `Main.csproj` defines `CL_GAME`;
-  Unity's editor compile doesn't, and can't see private game members. Serialized fields stay
-  outside `#if` so both compiles agree on the class's layout.
-- **The Unity project** (`src/`, editor 2022.3.62f3) was copied from Electrical DC's
-  (`../electrical_dc/src`), which came from the `stationeersunitymoddingtemplate` Unity
-  template. Its reference DLLs in `src/Assets/Assemblies/` are never committed, only their
-  `.meta` files; `dotnet build Main.csproj` copies them in, so build once before opening Unity
-  after a clone. The same build copies `About/About.xml` to `src/Assets/About/` (gitignored)
-  for the exporter; edit the root one only. Close Unity before moving files under `src/`.
-- **The prefab.** `src/Assets/Editor/BuildPrefabs.cs` builds it; edit the script, not the
-  prefab. It's a placeholder that `CableLabelPrefabs` finishes at load from the vanilla pipe
-  label and a cable fuse.
-- **Asset bundles.** `dotnet build Main.csproj -t:Install` runs Unity headless first
-  (`BuildPrefabs.BuildAndExport`, log in `src/Logs/install-export.log`) and exports to
-  `src/Build/CableLabels/` (gitignored). Install copies only the `*.assets` bundles, never the
-  exporter's own `CableLabels.dll`, which would clash with the shipped one. While the editor
-  has `src/` open, batch mode can't run; Install warns and uses the last export.
-  `-p:SkipUnity=true` skips it.
-- **CI** builds the DLL only. A release needs the asset bundle, which needs Unity, so releases
-  are packaged locally from an Install.
+- **Versioning.** `Assets/About/About.xml` holds the mod's version. Keep
+  `Assets/CableLabels/ThisModInfo.cs` in step with it.
+- **Edit `About.xml`, not Player Settings.** The `stationeers.modding.exporter` package syncs
+  About.xml's `Name`, `Author` and `Version` to Player Settings, and back again while the
+  editor is open. Its write-back drops the `<?xml?>` declaration and adds a UTF-8 BOM; that is
+  expected.
+- **Private game members** go through Harmony's `AccessTools`, since Unity compiles against the
+  plain `Assembly-CSharp`, not a publicized one (`CableLabel` shares `Label.HasDrawn` this
+  way).
+- **Reference DLLs.** `Assets/Assemblies/` holds local copies of the game's, BepInEx's and
+  LaunchPad's DLLs for Unity to compile against. Only their `.meta` files are committed. On a
+  fresh clone, copy each DLL named by a `.meta` there from the game's
+  `rocketstation_Data/Managed/`, `BepInEx/core/` or `BepInEx/plugins/StationeersLaunchPad/`.
+  To use another DLL, copy it in, commit the `.meta` Unity makes, and add it to the asmdef's
+  `precompiledReferences`.
+- **The prefab is built from code.** `Assets/Editor/BuildPrefabs.cs` writes
+  `Assets/Prefabs/`, and `Export.Run` runs it before every export, so edit the builder, never
+  the prefab, and commit what it writes. It's a placeholder that `CableLabelPrefabs` finishes
+  at load from the vanilla pipe label and a cable fuse.
+- **Building and installing.** `tools\install.ps1` exports the mod with Unity, headless
+  (`CableLabels.Editor.Export.Run`, log in `Logs/install-export.log`), into
+  `Build/CableLabels/`, then replaces `CableLabels\` in each mods folder: `-Target Server` is
+  `E:\Stationeers\mods`, the dedicated server owned by coding agents; `-Target Local` is
+  Erica's own `Documents\My Games\Stationeers\mods`; the default is both. Agents testing a
+  change install to `Server` only, unless Erica asks otherwise. Batch mode can't open the
+  project while the editor has it open; close the editor, or build from it to
+  `Build/CableLabels.exe` and pass `-SkipBuild`. Installing doesn't enable the mod:
+  LaunchPad's `modconfig.xml` in each game folder does that.
+- **Check Unity's compile before committing:** run the editor with
+  `-batchmode -quit -nographics -projectPath . -logFile <file>` and look for `error CS`.
+- **Generated files are not committed.** Unity regenerates `*.csproj` and `*.sln` at the root,
+  and `Library/`, `Temp/`, `Logs/`, `UserSettings/` and `Build/`.
+- **Every asset is committed with its `.meta` file**, and they are renamed, moved and deleted
+  together. The `.meta` holds the GUID that prefabs reference; a lost or regenerated one breaks
+  those references silently.
+- **Smart Merge.** `.gitattributes` sends Unity's YAML through the `unityyamlmerge` driver,
+  which each clone configures once; see `../sbr-electrical/AGENTS.md`, "Smart Merge", for the
+  three `git config` lines.
+- **LaunchPad needs `thumb.png` and `Preview.png`** in `Assets/About/`. They are generated by
+  `python tools/make_images.py` (Pillow); edit the script, not the PNGs.
+- **No CI.** A release needs the asset bundle, which needs Unity, so releases are packaged
+  from a local export.
 - **The decompiled source.** `Label` is `Assets\Scripts\Objects\Label.cs`,
-  `DeviceCableMounted` is `Assets\Scripts\Objects\Electrical\DeviceCableMounted.cs`.
+  `DeviceCableMounted` is `Assets\Scripts\Objects\Electrical\DeviceCableMounted.cs`, under
+  `C:\Users\erica\Source\Decompilation\Stationeers\Assembly-CSharp`.

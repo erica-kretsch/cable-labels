@@ -7,8 +7,8 @@ using UnityEngine;
 namespace CableLabels.Editor
 {
     // Builds the cable label prefab from code, so it is reproducible and reviewable. Run it from
-    // the menu, or headless through Install, which also exports the asset bundle
-    // (BuildAndExport). It overwrites the prefab, so edit this file, not the prefab.
+    // the menu; Export.Run runs it before every export. It overwrites the prefab, so edit this
+    // file, not the prefab.
     //
     // The prefab is a placeholder: a small box in a stand-in material. At load,
     // CableLabelPrefabs gives it the vanilla pipe label's mesh, materials and text settings and
@@ -16,10 +16,6 @@ namespace CableLabels.Editor
     // Sleeve that makes it thin, and the Visual inside it.
     public static class BuildPrefabs
     {
-        // The exporter's output folder, relative to src/: src/Build/CableLabels, which
-        // Main.props' Install copies the asset bundle from (UnityExportDir).
-        private const string ExportTarget = "Build/CableLabels.exe";
-
         private const string Folder = "Assets/Prefabs";
 
         private const string Name = "StructureCableLabel";
@@ -27,18 +23,6 @@ namespace CableLabels.Editor
         // The sleeve's thinness across the cable. Keep in step with CableLabelPrefabs.Thinness,
         // which sets it again at load.
         private const float Thinness = 0.5f;
-
-        // `dotnet build Main.csproj -t:Install` runs this headless (Main.props, UnityExport).
-        public static void BuildAndExport()
-        {
-            BuildAll();
-            stationeers.modding.exporter.LaunchPadExport.Export(new BuildPlayerOptions
-            {
-                locationPathName = ExportTarget,
-                target = BuildTarget.StandaloneWindows64,
-                options = BuildOptions.None,
-            });
-        }
 
         [MenuItem("Cable Labels/Build prefabs")]
         public static void BuildAll()

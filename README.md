@@ -10,17 +10,18 @@ The vanilla pipe label is `Assets.Scripts.Objects.Label`, a `DevicePipeMounted`.
 drawn by the game's one shared `CursorManager.TextCamera` into a render texture on one of the
 label's materials, and redrawn on `OnRenamed`, so the Labeller works on it with no extra code.
 
-- **`CableLabel`** ([src/Assets/CableLabels/CableLabel.cs](src/Assets/CableLabels/CableLabel.cs))
+- **`CableLabel`** ([Assets/CableLabels/CableLabel.cs](Assets/CableLabels/CableLabel.cs))
   is a `DeviceCableMounted`, the base the cable fuse and cable analyser use, so placement (a
   straight, unbroken cable in the same orientation) comes for free. `Label` can't be reused
   because it derives from the pipe class, so its drawing code is copied. Labels take turns on
-  the text camera through `Label.HasDrawn`, which `CableLabel` shares (publicized) rather than
-  copying, so a pipe label and a cable label never draw in the same frame.
+  the text camera through `Label.HasDrawn`, which `CableLabel` shares (through Harmony's
+  `AccessTools`) rather than copying, so a pipe label and a cable label never draw in the same
+  frame.
 - **The prefab** is built in code in the Unity project
-  ([src/Assets/Editor/BuildPrefabs.cs](src/Assets/Editor/BuildPrefabs.cs)) as a placeholder:
+  ([Assets/Editor/BuildPrefabs.cs](Assets/Editor/BuildPrefabs.cs)) as a placeholder:
   root → `Sleeve` (scaled thin across the cable) → `Visual`. The Unity project has none of the
   game's assets.
-- **At load**, [CableLabelPrefabs](src/Assets/CableLabels/Game/CableLabelPrefabs.cs) gives the
+- **At load**, [CableLabelPrefabs](Assets/CableLabels/CableLabelPrefabs.cs) gives the
   placeholder the pipe label's mesh, materials, text settings, thumbnail, blueprint and
   deconstruct tool, fits the collider to the thinned mesh, takes placement settings from a
   vanilla cable fuse, and adds the label to the `ItemPipeLabel` kit as a second option.
@@ -38,17 +39,18 @@ Scaffolded, not yet tried in game. Things to check first:
 
 ## Building
 
-Needs the .NET SDK, a Stationeers install, and Unity 2022.3.62f3 (for the asset bundle).
+The repo root is a Unity 2022.3.62f3 project, laid out as SBR Electrical's; Unity compiles the
+mod. On a fresh clone, first copy the game's, BepInEx's and LaunchPad's DLLs into
+`Assets/Assemblies/` (the `.meta` files there name them; see [AGENTS.md](AGENTS.md)).
 
 ```
-dotnet build Main.csproj
-dotnet build Main.csproj -t:Install
+.\tools\install.ps1 -Target Local
 ```
 
-The first builds the DLL and copies the game's DLLs into the Unity project; do it once before
-opening `src/` in Unity. The second also rebuilds the prefab and exports the asset bundle with
-Unity headless, then copies the DLL, the bundle, `About/` and `GameData/` into LaunchPad's local
-mods folder. Pass `-p:SkipUnity=true` to install the last exported bundle instead. See
-[AGENTS.md](AGENTS.md) for the repo's quirks.
+exports the mod with Unity, headless, into `Build/CableLabels/`, then installs the DLL, the
+asset bundle, `About/` and `GameData/` into LaunchPad's local mods folder. Close the editor
+first, or build from it and pass `-SkipBuild`. See [AGENTS.md](AGENTS.md) for the repo's
+quirks.
 
-`About/Preview.png` and `About/thumb.png` come from `python tools/make_images.py` (Pillow).
+`Assets/About/Preview.png` and `Assets/About/thumb.png` come from
+`python tools/make_images.py` (Pillow).

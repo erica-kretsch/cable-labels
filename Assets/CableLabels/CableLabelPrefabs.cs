@@ -1,6 +1,3 @@
-// Game flavour only: the shipped DLL, built by dotnet. LaunchPad calls OnLoaded; Unity's editor
-// compile doesn't need it.
-#if CL_GAME
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,9 +15,9 @@ namespace CableLabels
     // OnLoaded(List<GameObject>) method and calls it with the bundles' prefabs.
     //
     // The Unity project has none of the game's assets, so its prefab is a placeholder
-    // (Editor/BuildPrefabs.cs). Here, once the game's prefabs exist, it takes the vanilla pipe
-    // label's mesh, materials and text settings, shrunk across its axis to fit a cable, and its
-    // placement settings from a vanilla cable fuse, the closest cable-mounted device.
+    // (Assets/Editor/BuildPrefabs.cs). Here, once the game's prefabs exist, it takes the vanilla
+    // pipe label's mesh, materials and text settings, shrunk across its axis to fit a cable, and
+    // its placement settings from a vanilla cable fuse, the closest cable-mounted device.
     public class CableLabelPrefabs : MonoBehaviour
     {
         public static readonly Mod MOD = new Mod(ThisModInfo.AssemblyName, ThisModInfo.Version);
@@ -132,4 +129,3 @@ namespace CableLabels
         }
     }
 }
-#endif

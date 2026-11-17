@@ -104,7 +104,7 @@ MonoBehaviour:
   switchOnOff: {fileID: 0}
   activateButton: {fileID: 0}
   leverAnimationComponent: {fileID: 0}
-  SuppressSound: 1
+  SuppressSound: 0
   Forward: {x: 0, y: 0, z: 0}
   HideInStationpedia: 0
   IsEmergency: 0
@@ -116,22 +116,22 @@ MonoBehaviour:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.25, y: 0.25, z: 0.25}
   SurfaceArea: 0
-  SurfaceAreaScale: 1
+  SurfaceAreaScale: 0
   BoundsOffset: {x: 0, y: 0, z: 0}
   IgnoreSave: 0
-  generateTerrain: 1
-  WillSave: 1
+  generateTerrain: 0
+  WillSave: 0
   Rotation: {x: 0, y: 0, z: 0, w: 0}
   CanFrustumCull: 0
-  ThermodynamicsScale: 0.1
-  SolarHeatingScale: 0.1
-  WeatherDamageScale: 1
-  shatterTemperature: 1
-  flashpointTemperature: -1
-  autoignitionTemperature: -1
-  BurnTime: 5
-  ThingHealth: 100
-  EnergyReleasedWhenBurned: 100000
+  ThermodynamicsScale: 0
+  SolarHeatingScale: 0
+  WeatherDamageScale: 0
+  shatterTemperature: 0
+  flashpointTemperature: 0
+  autoignitionTemperature: 0
+  BurnTime: 0
+  ThingHealth: 0
+  EnergyReleasedWhenBurned: 0
   _customName: 
   PaintableMaterial: {fileID: 0}
   CustomColor:
@@ -189,9 +189,9 @@ MonoBehaviour:
   IsUpdateAudio: 0
   IsUpdate100MS: 0
   IsUpdate1000MS: 0
-  CanPickup: 1
-  DestroyChildrenOnDead: 1
-  EmissionColor: {r: 1, g: 1, b: 1, a: 1}
+  CanPickup: 0
+  DestroyChildrenOnDead: 0
+  EmissionColor: {r: 0, g: 0, b: 0, a: 0}
   DiffuseIndex: 0
   SmoothnessIndex: 0
   LocalGrid:
@@ -199,7 +199,7 @@ MonoBehaviour:
     y: 0
     z: 0
   alwaysCastShadows: 0
-  maxPressureDelta: -1
+  maxPressureDelta: 0
   BuildingTip: 
   BuildStates:
   - Thumbnail: {fileID: 0}
@@ -262,17 +262,17 @@ MonoBehaviour:
       EntryQuantity: 0
       EntryQuantity2: 0
     Prefab: {fileID: 0}
-  GridSize: 2
+  GridSize: 0
   GridOffset: 0
   _useAxisIndependentGridSnapping: 0
   _gridSize3d: {x: 0, y: 0, z: 0}
   _gridOffset3d: {x: 0, y: 0, z: 0}
   PlacementType: 0
   SelectionDisplay: 0
-  StructureCollisionType: 2
+  StructureCollisionType: 0
   AllowMounting: 0
   UseCellPosition: 0
-  BoundsGridRatio: 0.9
+  BoundsGridRatio: 0
   BoundsGridShiftForward: 0
   BoundsGridShiftSide: 0
   BoundsGridExtraHeight: 0
@@ -281,9 +281,9 @@ MonoBehaviour:
   BoundsGridExtraWidth: 0
   BoundsGridExtraForward: 0
   BoundsForward: 0
-  DualRegisterGridScale: 1
-  RotationAxis: 7
-  AllowedRotations: 7
+  DualRegisterGridScale: 0
+  RotationAxis: 0
+  AllowedRotations: 0
   CustomNavMeshFilter: {fileID: 0}
   blockingGrids: []
   RegisteredLocalGrid:
@@ -307,16 +307,16 @@ MonoBehaviour:
   DualRegister: 0
   requiresFrame: 0
   HasDataConnection: 0
-  UsedPower: 10
+  UsedPower: 0
   AttachedCables: []
   _infoScreen: {fileID: 0}
   wreckagePrefabs: []
-  ConnectionType: 8
-  OpenEndsPermutation: 000000000100000002000000030000000400000005000000
+  ConnectionType: 0
+  OpenEndsPermutation: 
   MeshRenderer: {fileID: 2175927638542662530}
   materialLabelIndex: 0
-  textTextureWidth: 512
-  textTextureHeight: 128
+  textTextureWidth: 0
+  textTextureHeight: 0
 --- !u!1 &7572280319161083194
 GameObject:
   m_ObjectHideFlags: 0

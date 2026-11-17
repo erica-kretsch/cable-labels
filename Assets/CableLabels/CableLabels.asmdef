@@ -1,7 +1,9 @@
 {
     "name": "CableLabels",
     "rootNamespace": "CableLabels",
-    "references": [],
+    "references": [
+        "Unity.TextMeshPro"
+    ],
     "includePlatforms": [
         "Editor",
         "WindowsStandalone64"
@@ -12,7 +14,10 @@
     "overrideReferences": true,
     "precompiledReferences": [
         "Assembly-CSharp.dll",
-        "Assembly-CSharp-firstpass.dll"
+        "Assembly-CSharp-firstpass.dll",
+        "BepInEx.dll",
+        "0Harmony.dll",
+        "LaunchPadBooster.dll"
     ],
     "defineConstraints": [],
     "versionDefines": [],

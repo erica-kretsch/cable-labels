@@ -1,0 +1,15 @@
+# Unity's YAML (Asset Serialization: Force Text). Unity writes it with LF on every platform.
+# The merge driver is Unity's Smart Merge, configured per clone (AGENTS.md, "Smart Merge").
+*.unity          text eol=lf merge=unityyamlmerge
+*.prefab         text eol=lf merge=unityyamlmerge
+*.asset          text eol=lf merge=unityyamlmerge
+*.mat            text eol=lf merge=unityyamlmerge
+*.anim           text eol=lf merge=unityyamlmerge
+*.controller     text eol=lf merge=unityyamlmerge
+*.overrideController text eol=lf merge=unityyamlmerge
+*.physicMaterial text eol=lf merge=unityyamlmerge
+*.lighting       text eol=lf merge=unityyamlmerge
+*.meta           text eol=lf merge=unityyamlmerge
+
+# Binary, never merged as text.
+*.png binary
