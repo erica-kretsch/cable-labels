@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Language xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Name>English</Name>
+  <Code>EN</Code>
+  <Font>font_english</Font>
+  <Things>
+    <RecordThing>
+      <Key>StructureCableLabel</Key>
+      <Value>Cable Label</Value>
+      <Description>A thinner {THING:StructurePipeLabel} for a straight stretch of cable. Place it with the {THING:ItemPipeLabel}, then label the label with the {THING:ItemLabeller}.</Description>
+    </RecordThing>
+  </Things>
+</Language>

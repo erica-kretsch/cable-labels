@@ -1,0 +1,22 @@
+{
+    "name": "CableLabels.Editor",
+    "rootNamespace": "CableLabels.Editor",
+    "references": [
+        "CableLabels",
+        "stationeers.modding.exporter"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Assembly-CSharp.dll",
+        "Assembly-CSharp-firstpass.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

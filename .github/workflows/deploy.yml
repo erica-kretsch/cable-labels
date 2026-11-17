@@ -1,0 +1,46 @@
+name: Build Mod
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: RageAgainstThePixel/setup-steamcmd@v1
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      # The dedicated server is free to download anonymously and ships the same game DLLs.
+      - name: Download game DLLs
+        run: |
+          for i in {1..8}; do
+            steamcmd +login anonymous +sDepotDownloadFileFilter "*.dll" +app_update 600760 validate +quit && break
+            echo "SteamCMD failed, retry #$i"
+            sleep 10
+          done
+
+      - uses: actions/checkout@v4
+
+      # The dedicated server has no LaunchPad; take LaunchPadBooster.dll from its release.
+      - name: Download LaunchPad
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v1.2.1 --repo StationeersLaunchPad/StationeersLaunchPad             --pattern "StationeersLaunchPad-server-v1.2.1.zip" --dir "$RUNNER_TEMP"
+          unzip -q "$RUNNER_TEMP/StationeersLaunchPad-server-v1.2.1.zip" -d "$RUNNER_TEMP/slp"
+
+      # Releases need the asset bundle, which needs Unity, so they are packaged locally from an
+      # Install (AGENTS.md). CI only checks the DLL builds.
+      - name: Build
+        run: |
+          export STATIONEERS_DLL_DIR="$STEAM_DIR/steamapps/common/Stationeers Dedicated Server/rocketstation_DedicatedServer_Data/Managed"
+          dotnet build --configuration Release Main.csproj \n            -p:LaunchPadBoosterDll="$RUNNER_TEMP/slp/StationeersLaunchPad/LaunchPadBooster.dll"

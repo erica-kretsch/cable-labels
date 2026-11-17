@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetadata xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Name>Cable Labels</Name>
+  <Author>erica-kretsch</Author>
+  <ModID>cable-labels</ModID>
+  <Version>0.1.0</Version>
+  <!-- A new structure: host and clients must all have it. -->
+  <ModSide>Both</ModSide>
+  <!-- Steam description using steam styling tags for Steam workshop page -->
+  <Description>[h1]Cable Labels[/h1]
+
+A label for cables, like the vanilla pipe label but thinner. Place it on a straight stretch of cable with the Pipe Label kit (cycle to the cable label), then name it with the Labeller.
+
+Idea by Kastuk.
+
+[h2]Notes[/h2]
+[list]
+[*]Needed on the host and every client.
+[*]Removing the mod from a save removes any cable labels placed in it.
+[/list]
+
+This is a [b]StationeersLaunchPad[/b] mod. It requires BepInEx. See: https://github.com/StationeersLaunchPad/StationeersLaunchPad
+  </Description>
+  <!-- Ingame Description using TMP tags for Workshop menu -->
+  <InGameDescription>
+    <![CDATA[<size="30"><color=#ffa500> Cable Labels </color></size>
+A thinner pipe label for cables. Build it from the Pipe Label kit and name it with the Labeller.
+
+Install on the host and every client. Requires BepInEx and StationeersLaunchPad.
+]]>
+  </InGameDescription>
+  <ChangeLog>
+    [h3]Version 0.1.0:[/h3]
+    [list]
+    [*]First version: a cable label built from the Pipe Label kit.
+    [/list]
+  </ChangeLog>
+  <Tags>
+    <Tag>Quality of Life</Tag>
+    <Tag>BepInEx</Tag>
+    <Tag>StationeersLaunchPad</Tag>
+  </Tags>
+  <Dependencies />
+  <LoadBefore />
+  <LoadAfter />
+</ModMetadata>

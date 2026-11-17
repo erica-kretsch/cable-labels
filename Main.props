@@ -1,0 +1,165 @@
+<?xml version="1.0" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Gitignored local overrides, e.g. StationeersDllDir when the game isn't found below.
+    Imported first so that anything set there wins over the search.
+  -->
+  <Import Project="Local.Developer.props" Condition="Exists('Local.Developer.props')"/>
+
+  <!-- Find the game's Managed folder: STATIONEERS_DLL_DIR, then the usual Steam locations. -->
+  <PropertyGroup>
+    <DllSubDir>steamapps/common/Stationeers/rocketstation_Data/Managed</DllSubDir>
+    <StationeersDllDir Condition="'$(StationeersDllDir)' == '' And '$(STATIONEERS_DLL_DIR)' != ''">$(STATIONEERS_DLL_DIR)</StationeersDllDir>
+    <StationeersDllDir Condition="!Exists('$(StationeersDllDir)') And Exists('C:/Program Files (x86)/Steam/$(DllSubDir)')">C:/Program Files (x86)/Steam/$(DllSubDir)</StationeersDllDir>
+    <StationeersDllDir Condition="!Exists('$(StationeersDllDir)') And Exists('C:/Program Files/Steam/$(DllSubDir)')">C:/Program Files/Steam/$(DllSubDir)</StationeersDllDir>
+    <StationeersDllDir Condition="!Exists('$(StationeersDllDir)') And Exists('D:/Program Files (x86)/Steam/$(DllSubDir)')">D:/Program Files (x86)/Steam/$(DllSubDir)</StationeersDllDir>
+    <StationeersDllDir Condition="!Exists('$(StationeersDllDir)') And Exists('D:/Program Files/Steam/$(DllSubDir)')">D:/Program Files/Steam/$(DllSubDir)</StationeersDllDir>
+    <StationeersDllDir Condition="!Exists('$(StationeersDllDir)') And Exists('C:/Steam/$(DllSubDir)')">C:/Steam/$(DllSubDir)</StationeersDllDir>
+    <StationeersDllDir Condition="!Exists('$(StationeersDllDir)') And Exists('D:/Steam/$(DllSubDir)')">D:/Steam/$(DllSubDir)</StationeersDllDir>
+    <StationeersDllDir Condition="!Exists('$(StationeersDllDir)') And Exists('E:/Steam/$(DllSubDir)')">E:/Steam/$(DllSubDir)</StationeersDllDir>
+    <StationeersDllDir Condition="!Exists('$(StationeersDllDir)') And Exists('$(HOME)/.steam/steam/$(DllSubDir)')">$(HOME)/.steam/steam/$(DllSubDir)</StationeersDllDir>
+    <StationeersDllDir Condition="!Exists('$(StationeersDllDir)') And Exists('$(HOME)/Steam/$(DllSubDir)')">$(HOME)/Steam/$(DllSubDir)</StationeersDllDir>
+    <StationeersDllDir Condition="!Exists('$(StationeersDllDir)') And Exists('$(STEAMROOT)/$(DllSubDir)')">$(STEAMROOT)/$(DllSubDir)</StationeersDllDir>
+
+    <!-- Where `dotnet build -t:Install` puts the mod: LaunchPad's local mods folder. -->
+    <StationeersPluginDirectory Condition="'$(StationeersPluginDirectory)' == ''">$(USERPROFILE)/Documents/My Games/Stationeers/mods</StationeersPluginDirectory>
+  </PropertyGroup>
+
+  <Target Name="CheckStationeersDllDir" BeforeTargets="BeforeBuild">
+    <Message Importance="High" Text="StationeersDllDir: $(StationeersDllDir)"/>
+    <Error Condition="!Exists('$(StationeersDllDir)/Assembly-CSharp.dll')" Text="Could not find Stationeers. Set StationeersDllDir in Local.Developer.props, or the STATIONEERS_DLL_DIR environment variable."/>
+  </Target>
+
+  <!--
+    Generates ThisModInfo from About/About.xml, so the mod ID and version live in one place:
+    LaunchPad reads the same file.
+  -->
+  <Target Name="GenerateModInfo" BeforeTargets="BeforeBuild">
+    <XmlPeek XmlInputPath="About/About.xml" Query="/ModMetadata/ModID/text()">
+      <Output TaskParameter="Result" PropertyName="ModInfoID"/>
+    </XmlPeek>
+    <XmlPeek XmlInputPath="About/About.xml" Query="/ModMetadata/Version/text()">
+      <Output TaskParameter="Result" PropertyName="ModInfoVersion"/>
+    </XmlPeek>
+    <PropertyGroup>
+      <ModInfoFile>$(IntermediateOutputPath)ThisModInfo.g.cs</ModInfoFile>
+      <!-- %3B is a literal semicolon; a bare one would split the lines. -->
+      <ModInfoSource>
+// &lt;auto-generated/&gt; from About/About.xml by Main.props
+internal static class ThisModInfo
+{
+    public const string ModID = "$(ModInfoID)"%3B
+    public const string AssemblyName = "$(AssemblyName)"%3B
+    public const string Version = "$(ModInfoVersion)"%3B
+}
+      </ModInfoSource>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(ModInfoFile)" Lines="$(ModInfoSource)" Overwrite="true" WriteOnlyWhenDifferent="true"/>
+    <ItemGroup>
+      <Compile Include="$(ModInfoFile)"/>
+      <FileWrites Include="$(ModInfoFile)"/>
+    </ItemGroup>
+  </Target>
+
+  <!-- Copies the plugin and About/ into StationeersPluginDirectory/AssemblyName. -->
+  <Target Name="Install" DependsOnTargets="Build">
+    <ItemGroup>
+      <AboutFiles Include="About/**/*.*"/>
+    </ItemGroup>
+    <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(StationeersPluginDirectory)/$(AssemblyName)/$(TargetFileName)" SkipUnchangedFiles="true"/>
+    <Copy SourceFiles="@(AboutFiles)" DestinationFiles="@(AboutFiles->'$(StationeersPluginDirectory)/$(AssemblyName)/About/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true"/>
+  </Target>
+
+  <!-- Where Unity's Build writes, and the exporter's folder inside it (src/Build/CableLabels). -->
+  <PropertyGroup>
+    <UnityExportDir>src/Build/CableLabels</UnityExportDir>
+  </PropertyGroup>
+
+  <!--
+    Unity compiles src/Assets/CableLabels against the DLLs in src/Assets/Assemblies, which are
+    the game's, BepInEx's and LaunchPad's: never committed. Their .meta files are, and
+    they list what belongs there: the set Electrical DC's Unity template copied. The Game
+    build copies each one in from wherever it lives (unchanged ones are skipped), so a fresh
+    clone needs one dotnet build before Unity opens it. To add a reference, copy its DLL in once
+    and commit the .meta Unity makes for it.
+  -->
+  <Target Name="UnityAssemblies" AfterTargets="Build">
+    <PropertyGroup>
+      <StationeersRoot>$(StationeersDllDir)/../..</StationeersRoot>
+    </PropertyGroup>
+    <ItemGroup>
+      <UnityMeta Include="src/Assets/Assemblies/*.dll.meta" />
+      <!-- X.dll.meta's Filename is X.dll. -->
+      <UnityAssemblyName Include="@(UnityMeta->'%(Filename)')" />
+      <UnityAssembly Include="$(StationeersDllDir)/%(UnityAssemblyName.Identity)"
+          Condition="Exists('$(StationeersDllDir)/%(UnityAssemblyName.Identity)')" />
+      <UnityAssembly Include="$(StationeersRoot)/BepInEx/core/%(UnityAssemblyName.Identity)"
+          Condition="Exists('$(StationeersRoot)/BepInEx/core/%(UnityAssemblyName.Identity)')" />
+      <UnityAssembly Include="$(StationeersRoot)/BepInEx/plugins/StationeersLaunchPad/%(UnityAssemblyName.Identity)"
+          Condition="Exists('$(StationeersRoot)/BepInEx/plugins/StationeersLaunchPad/%(UnityAssemblyName.Identity)')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(UnityAssembly)" DestinationFolder="src/Assets/Assemblies" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!--
+    The exporter keeps Unity's player settings (product name, author, version) in sync with
+    Assets/About/About.xml, and names the asset bundle after the product name. The repo's
+    About/ is the only real one (GenerateModInfo and Install read it), so the build copies it
+    in; the copy is gitignored. The exporter may write player settings
+    back into the copy; the next build overwrites it.
+  -->
+  <Target Name="UnityAbout" AfterTargets="Build">
+    <Copy SourceFiles="About/About.xml" DestinationFolder="src/Assets/About" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!--
+    Install first rebuilds the prefabs and exports the asset bundle with Unity, headless
+    (BuildPrefabs.BuildAndExport), so one command installs everything. Batch mode can't open a
+    project the editor already has open, which Unity marks with src/Temp/UnityLockfile: then it
+    warns and installs the last exported bundle; use the editor's menu and Build instead. Skip
+    it with -p:SkipUnity=true. Set UnityEditor in Local.Developer.props if Unity isn't in Unity
+    Hub's default folder; its version must match src/ProjectSettings/ProjectVersion.txt.
+  -->
+  <PropertyGroup>
+    <UnityEditor Condition="'$(UnityEditor)' == ''">C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Unity.exe</UnityEditor>
+    <UnityLog>src/Logs/install-export.log</UnityLog>
+  </PropertyGroup>
+  <Target Name="UnityExport" BeforeTargets="Install" DependsOnTargets="Build" Condition="'$(SkipUnity)' != 'true'">
+    <Warning Condition="Exists('src/Temp/UnityLockfile')"
+        Text="The Unity editor has src/ open, so the prefabs weren't rebuilt or exported; installing the last exported bundle. Run Cable Labels > Build prefabs and Build in the editor, or close it." />
+    <Error Condition="!Exists('src/Temp/UnityLockfile') And !Exists('$(UnityEditor)')"
+        Text="Unity not found at '$(UnityEditor)'. Set UnityEditor in Local.Developer.props, or pass -p:SkipUnity=true." />
+    <Message Condition="!Exists('src/Temp/UnityLockfile')" Importance="high"
+        Text="Rebuilding prefabs and exporting the asset bundle with Unity (log: $(UnityLog))" />
+    <Exec Condition="!Exists('src/Temp/UnityLockfile')"
+        Command="&quot;$(UnityEditor)&quot; -batchmode -quit -nographics -projectPath &quot;$(MSBuildProjectDirectory)/src&quot; -executeMethod CableLabels.Editor.BuildPrefabs.BuildAndExport -logFile &quot;$(MSBuildProjectDirectory)/$(UnityLog)&quot;" />
+  </Target>
+
+  <!--
+    Install also copies Unity's asset bundles (the prefabs), when there are any. Only the
+    bundles: the exporter writes its own CableLabels.dll next to them, and a second assembly of
+    the same name would clash with this one in game.
+  -->
+  <Target Name="InstallAssetBundles" AfterTargets="Install">
+    <ItemGroup>
+      <AssetBundle Include="$(UnityExportDir)/StandaloneWindows/*.assets" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(AssetBundle)"
+      DestinationFolder="$(StationeersPluginDirectory)/$(AssemblyName)"
+      SkipUnchangedFiles="true"
+    />
+  </Target>
+
+  <!-- GameData/ (names and descriptions) installs beside About/. -->
+  <Target Name="InstallGameData" AfterTargets="Install">
+    <ItemGroup>
+      <GameDataFiles Include="GameData/**/*.*" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(GameDataFiles)"
+      DestinationFiles="@(GameDataFiles->'$(StationeersPluginDirectory)/$(AssemblyName)/GameData/%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true"
+    />
+  </Target>
+</Project>
