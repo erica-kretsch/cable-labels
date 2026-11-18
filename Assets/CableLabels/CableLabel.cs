@@ -181,10 +181,18 @@ namespace CableLabels
         }
 
         // The outline and the colliders follow the mesh as fitted. The two trigger capsules keep
-        // their radius and their offset either side of the axis, reaching 0.2 m across it, past
-        // any cable's own colliders (vanilla's r 0.1, SBR fencing wire's 0.1 m box), so the label
-        // is hit before the cable it sits on. Along the run they shrink to the mesh's extent, so
-        // a custom mesh in part of the cell leaves the rest (a fencing spacer) to the cable.
+        // their radius and their distance either side of the mesh, reaching 0.2 m across the
+        // cable, past any cable's own colliders (vanilla's r 0.1, SBR fencing wire's 0.1 m box),
+        // so the label is hit before the cable it sits on. Along the run they shrink to the
+        // mesh's extent, so a custom mesh in part of the cell leaves the rest (a fencing spacer)
+        // to the cable.
+        //
+        // The standard label's panels face its ±x, so its capsules sit there. A custom mesh can
+        // face any way in this label's frame (it's posed in the cable's, and the label's roll is
+        // the player's), so its capsules go either side of its thinnest axis across the run,
+        // the way its text faces: above and below SBR's fencing plate, not over its wires. The
+        // axis is found in the mesh's own space and turned into this label's, so it holds at
+        // any roll.
         private void FitSelection(Transform visual, Mesh mesh)
         {
             var b = mesh.bounds;
@@ -205,15 +213,42 @@ namespace CableLabels
                 _capsuleCentres = _capsules.Select(c => c.center).ToArray();
             }
             var standard = mesh == _standardMesh;
+            var facing = standard ? Vector3.right : FacingAcrossRun(visual, mesh);
             for (var i = 0; i < _capsules.Length; i++)
             {
                 var capsule = _capsules[i];
                 var centre = _capsuleCentres[i];
-                capsule.center = standard ? centre : new Vector3(centre.x, centre.y, fitted.center.z);
-                capsule.height = standard
-                    ? _capsuleHeights[i]
-                    : Mathf.Max(fitted.size.z + 0.05f, 2f * capsule.radius);
+                if (standard)
+                {
+                    capsule.center = centre;
+                    capsule.height = _capsuleHeights[i];
+                    continue;
+                }
+                var across = facing * centre.x;
+                capsule.center = new Vector3(fitted.center.x + across.x, fitted.center.y + across.y,
+                    fitted.center.z);
+                capsule.height = Mathf.Max(fitted.size.z + 0.05f, 2f * capsule.radius);
             }
+        }
+
+        // The direction a custom mesh's text faces, in this label's frame: of the mesh's own
+        // axes that lie across the run (z), the one along which the mesh is thinnest.
+        private static Vector3 FacingAcrossRun(Transform visual, Mesh mesh)
+        {
+            var size = mesh.bounds.size;
+            var facing = Vector3.right;
+            var thinnest = float.MaxValue;
+            var axes = new[] { Vector3.right, Vector3.up, Vector3.forward };
+            for (var i = 0; i < 3; i++)
+            {
+                var direction = visual.localRotation * axes[i];
+                if (Mathf.Abs(direction.z) > 0.7f || size[i] >= thinnest)
+                    continue;
+                thinnest = size[i];
+                facing = direction;
+            }
+            facing.z = 0f;
+            return facing.sqrMagnitude > 1e-6f ? facing.normalized : Vector3.right;
         }
 
         // How far the cable's meshes reach from its axis, in this label's space.
