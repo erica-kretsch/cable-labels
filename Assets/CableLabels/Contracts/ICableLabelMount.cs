@@ -22,11 +22,11 @@ namespace CableLabels.Contracts
         float? CableLabelRadius { get; }
 
         // For a cable that isn't round: the mesh the label should use on it, and that mesh's
-        // offset and rotation in the cable's own local frame (as the cable prefab is built), so
-        // the label follows the cable's roll. The mesh is placed at the centre of the label's
-        // cell; an offset along the cable's run is ignored, since a label sits in its own cell of
-        // a long cable, but the mesh itself may be any shape and length. Return false to use the
-        // standard label.
+        // offset and rotation in the cable's own local frame (as the cable prefab is built), in
+        // case the cable isn't rotationally symmetric of order 4. The mesh is placed at the
+        // centre of the label's cell; an offset along the cable's run is ignored, since a label
+        // sits in its own cell of a long cable, but the mesh itself may be any shape and length.
+        // Return false to use the standard label.
         //
         // Called at most once per cable prefab, on the main thread: Cable Labels keeps the
         // result, false included, so build the mesh here and don't cache it yourself.

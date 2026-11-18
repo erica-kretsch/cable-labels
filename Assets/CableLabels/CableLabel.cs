@@ -91,8 +91,8 @@ namespace CableLabels
         //
         // 1. The cable's ICableLabelMount (CableLabelMounts), if it has one: its own mesh and
         //    pose, for a cable that isn't round (one per cable prefab, CableLabelMeshes), given in
-        //    the cable's frame, so it follows the cable's roll whatever the label's own is (a
-        //    label matches the cable's run axis, IsSameOrientation, but not its roll), or else
+        //    the cable's frame in case the cable isn't rotationally symmetric of order 4 (a label
+        //    matches the cable's run axis, IsSameOrientation, but not its roll), or else
         // 2. its CableLabelRadius, if it gives one, or else
         // 3. the cable measured: the pipe label is scaled by its pipe's LabelSizeOffset
         //    (Label.OnGridPlaced), and cables have no such field, so this reads the cable's
