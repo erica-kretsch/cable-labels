@@ -5,8 +5,7 @@ tell your circuits apart. Idea by Kastuk.
 
 <img src="docs/screenshot.jpg" alt="Three cables labelled Distribution, Greenhouse and Lighting behind an open composite roll cover wall, with the Labeller in hand" width="560">
 
-Cable labels behind a composite roll cover wall, which gives access to cables while normally
-keeping them hidden.
+Cable labels in use.
 
 ## Using it
 
