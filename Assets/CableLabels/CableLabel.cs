@@ -70,9 +70,11 @@ namespace CableLabels
         // The pipe label is scaled by its pipe's LabelSizeOffset (Label.OnGridPlaced); cables
         // have no such field, so this measures the cable instead, from its meshes' bounds in
         // this label's space. The panels sit at 0.035 m, clear of normal and heavy cable
-        // (0.025 m), but super-heavy is 0.038 m and burnt cable bulges to about 0.05 m: then they
-        // widen across the cable, not along it, so the label stays within its cell. Its
-        // colliders stay as they are, already wider than any vanilla cable's (r 0.1).
+        // (0.025 m), but super-heavy is 0.038 m: then they widen across the cable, not along it,
+        // so the label stays within its cell. Its colliders stay as they are, already wider than
+        // any vanilla cable's (r 0.1). A burnt cable is a CableRuptured, not a Cable, so the
+        // cell has no cable and the label keeps the size it had (Cable.Break leaves mounted
+        // devices in place).
         private void FitToCable()
         {
             if (IsCursor || MeshRenderer == null)

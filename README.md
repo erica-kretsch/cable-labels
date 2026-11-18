@@ -24,7 +24,7 @@ label's materials, and redrawn on `OnRenamed`, so the Labeller works on it with 
   pipe label it has two trigger capsules standing out past the cable's own, so the Labeller
   hits the label, not the cable under it. Where a pipe label is scaled by its pipe's
   `LabelSizeOffset`, a cable label measures the cable it's on and widens to clear it
-  (super-heavy is 0.038 m, burnt cable up to about 0.05 m). The icons are camera renders of the mesh, as the
+  (super-heavy is 0.038 m against normal and heavy's 0.025 m). The icons are camera renders of the mesh, as the
   game's are ([Assets/Editor/RenderIcons.cs](Assets/Editor/RenderIcons.cs)), running the other
   diagonal from the pipe label's so the two are easy to tell apart; the kit's texture comes
   from [tools/make_art.py](tools/make_art.py).
@@ -45,7 +45,7 @@ Placeable in game. Still to check:
 
 - How the text reads at this size, and the panels' proportions (`Radius`, `Length`,
   `PanelDegrees` in `BuildPrefabs`).
-- How the label looks once widened to clear super-heavy and burnt cable.
+- How the label looks once widened to clear super-heavy cable.
 
 ## Building
 
