@@ -67,25 +67,69 @@ namespace CableLabels
             FitToCable();
         }
 
-        // The pipe label is scaled by its pipe's LabelSizeOffset (Label.OnGridPlaced); cables
-        // have no such field, so this measures the cable instead, from its meshes' bounds in
-        // this label's space. The panels sit at 0.035 m, clear of normal and heavy cable
-        // (0.025 m), but super-heavy is 0.038 m: then they widen across the cable, not along it,
-        // so the label stays within its cell. Its colliders stay as they are, already wider than
-        // any vanilla cable's (r 0.1). A burnt cable is a CableRuptured, not a Cable, so the
-        // cell has no cable and the label keeps the size it had (Cable.Break leaves mounted
-        // devices in place).
+        // The label's own mesh, kept to go back to if a custom one is replaced (the cable under
+        // it changes).
+        private Mesh _standardMesh;
+
+        // Fits the label to the cable under it, in order:
+        //
+        // 1. The cable's ICableLabelMount (CableLabelMounts), if it has one: its own mesh and
+        //    pose, for a cable that isn't round, or else
+        // 2. its CableLabelRadius, if it gives one, or else
+        // 3. the cable measured: the pipe label is scaled by its pipe's LabelSizeOffset
+        //    (Label.OnGridPlaced), and cables have no such field, so this reads the cable's
+        //    meshes' bounds in this label's space. The panels sit at 0.035 m, clear of normal
+        //    and heavy cable (0.025 m), but super-heavy is 0.038 m: then they widen to stand
+        //    Clearance off it.
+        //
+        // The label only ever widens across the cable, never along it, so it stays within its
+        // cell. Its colliders stay as they are, already wider than any vanilla cable's (r 0.1).
+        // A burnt cable is a CableRuptured, not a Cable, so the cell has no cable and the label
+        // keeps the fit it had (Cable.Break leaves mounted devices in place).
         private void FitToCable()
         {
             if (IsCursor || MeshRenderer == null)
                 return;
             var visual = MeshRenderer.transform;
-            var filterOwn = visual.GetComponent<MeshFilter>();
+            var filter = visual.GetComponent<MeshFilter>();
             var cable = SmallCell?.Cable;
-            if (filterOwn == null || filterOwn.sharedMesh == null || cable == null)
+            if (filter == null || cable == null)
                 return;
-            var mesh = filterOwn.sharedMesh;
-            var cableRadius = 0f;
+            if (_standardMesh == null)
+                _standardMesh = filter.sharedMesh;
+            if (_standardMesh == null)
+                return;
+
+            var mesh = _standardMesh;
+            var position = Vector3.zero;
+            var rotation = Quaternion.identity;
+            var scale = 1f;
+            CableLabelMounts.TryGet(cable, out var mount);
+            if (mount != null && mount.TryGetLabelMesh(out var custom, out var offset, out var turn)
+                && custom != null)
+            {
+                mesh = custom;
+                position = new Vector3(offset.x, offset.y, 0f);
+                rotation = turn;
+            }
+            else
+            {
+                var standardRadius = _standardMesh.bounds.extents.x;
+                if (mount?.CableLabelRadius is float radius && radius > 0f)
+                    scale = radius / standardRadius;
+                else
+                    scale = Mathf.Max(1f, (MeasureCableRadius(cable) + Clearance) / standardRadius);
+            }
+            filter.sharedMesh = mesh;
+            visual.localPosition = position;
+            visual.localRotation = rotation;
+            visual.localScale = new Vector3(scale, scale, 1f);
+        }
+
+        // How far the cable's meshes reach from its axis, in this label's space.
+        private float MeasureCableRadius(Cable cable)
+        {
+            var radius = 0f;
             foreach (var filter in cable.GetComponentsInChildren<MeshFilter>())
             {
                 if (filter.sharedMesh == null || filter.GetComponent<Renderer>() == null)
@@ -96,12 +140,10 @@ namespace CableLabels
                     var corner = b.center + Vector3.Scale(b.extents, new Vector3(
                         (i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
                     var p = transform.InverseTransformPoint(filter.transform.TransformPoint(corner));
-                    cableRadius = Mathf.Max(cableRadius, Mathf.Abs(p.x), Mathf.Abs(p.y));
+                    radius = Mathf.Max(radius, Mathf.Abs(p.x), Mathf.Abs(p.y));
                 }
             }
-            var ownRadius = mesh.bounds.extents.x;
-            var scale = Mathf.Max(1f, (cableRadius + Clearance) / ownRadius);
-            visual.localScale = new Vector3(scale, scale, 1f);
+            return radius;
         }
 
         public override void DeserializeSave(ThingSaveData savedData)

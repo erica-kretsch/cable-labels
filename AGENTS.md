@@ -76,6 +76,10 @@ Assisted-by: AGENT_NAME:MODEL_VERSION [TOOL1] [TOOL2]
   project while the editor has it open; close the editor, or build from it to
   `Build/CableLabels.exe` and pass `-SkipBuild`. Installing doesn't enable the mod:
   LaunchPad's `modconfig.xml` in each game folder does that.
+- **`Assets/CableLabels/Contracts/` is a published contract.** Other mods copy
+  `ICableLabelMount.cs` verbatim and Cable Labels matches their copy by full name and member
+  signatures (`CableLabelMounts`). Never edit it, not even its namespace: that silently breaks
+  every copy. A change is a new interface beside it, with its own binding.
 - **Check Unity's compile before committing:** run the editor with
   `-batchmode -quit -nographics -projectPath . -logFile <file>` and look for `error CS`.
 - **Generated files are not committed.** Unity regenerates `*.csproj` and `*.sln` at the root,
