@@ -9,15 +9,33 @@
   <!-- Steam description using steam styling tags for Steam workshop page -->
   <Description>[h1]Cable Labels[/h1]
 
-A label for cables, like the vanilla pipe label but thinner. Print a Cable Label kit at the Electronics Printer (1 iron), place the label on a straight stretch of cable, then name it with the Labeller.
+Pipes have labels; cables don't. Behind a wall panel or in a busy conduit, three red cables look the same until you trace them. This mod adds a cable label: the vanilla pipe label, made thinner to fit a cable, so you can name each run where you can see it.
 
 Idea by Kastuk.
 
-[h2]Notes[/h2]
+[h2]How to use it[/h2]
 [list]
-[*]Needed on the host and every client.
-[*]Removing the mod from a save removes any cable labels placed in it.
+[*]Print a [b]Kit (Cable Label)[/b] at the Electronics Printer, for 1 iron.
+[*]Place it on a straight stretch of cable, as you would a cable fuse. It won't go on a corner, a junction or a broken cable.
+[*]Name it with the Labeller. The name shows on both sides of the label.
 [/list]
+
+[h2]Details[/h2]
+[list]
+[*]The label fits itself to the cable it's on: normal, heavy and super-heavy.
+[*]Like the pipe label, it has open gaps at the top and bottom. If you're looking into one, roll the label as you place it (Insert / Page Up) so its text faces you.
+[*]One label per cell. A cable fuse or cable analyser can still be placed where a label is, so a label never gets in the way of an urgent fix.
+[*]It comes apart with the same tool as a pipe label.
+[/list]
+
+[h2]Multiplayer[/h2]
+Install it on the server and on every player: it adds a new structure, which a player without the mod doesn't have. Removing the mod from a save removes the cable labels placed in it, and nothing else.
+
+[h2]Support[/h2]
+Report a bug or ask for a change on GitHub: https://github.com/erica-kretsch/cable-labels/issues
+
+[h2]For modders[/h2]
+A label measures the cable it's on, so it fits any round modded cable with no work from you. For a cable that isn't round, or whose meshes reach beyond the cable itself, a small interface you copy into your own mod tells labels how to fit, without referencing this one. The GitHub README explains how.
 
 This is a [b]StationeersLaunchPad[/b] mod. It requires BepInEx. See: https://github.com/StationeersLaunchPad/StationeersLaunchPad
   </Description>
