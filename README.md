@@ -4,6 +4,11 @@ A [StationeersLaunchPad](https://github.com/StationeersLaunchPad/StationeersLaun
 adds a label for cables: the vanilla pipe label, but thinner, mounted on a straight stretch of
 cable. Idea by Kastuk, from the SBR Electrical announcement thread.
 
+<img src="docs/screenshot.jpg" alt="Three cables labelled Distribution, Greenhouse and Lighting behind an open composite roll cover wall, with the Labeller in hand" width="560">
+
+Cable labels behind a composite roll cover wall, which gives access to cables while normally
+keeping them hidden.
+
 ## How it works
 
 The vanilla pipe label is `Assets.Scripts.Objects.Label`, a `DevicePipeMounted`. Its text is
