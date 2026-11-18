@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Linq;
 using Assets.Scripts;
+using Assets.Scripts.Localization2;
 using Assets.Scripts.Objects;
 using Assets.Scripts.Objects.Electrical;
 using Assets.Scripts.Util;
@@ -68,6 +69,23 @@ namespace CableLabels
 
         /// <summary>Gap between a widened label and the cable's surface, in metres.</summary>
         private const float Clearance = 0.01f;
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// Also refuses a cell that already holds a device, as the pipe label does. A cell has one
+        /// device slot, and <see cref="DeviceCableMounted"/> doesn't check it.
+        /// </remarks>
+        public override CanConstructInfo CanConstruct()
+        {
+            var info = base.CanConstruct();
+            if (!info.CanConstruct)
+                return info;
+            var occupant = GridController.GetSmallCell(ThingTransformPosition)?.Device;
+            return occupant != null && occupant != this
+                ? CanConstructInfo.InvalidPlacement(
+                    GameStrings.PlacementBlockedBySmallGrid.AsString(occupant.DisplayName))
+                : info;
+        }
 
         /// <inheritdoc />
         /// <remarks>Refits the label whenever its cell changes.</remarks>
