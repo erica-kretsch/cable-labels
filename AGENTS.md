@@ -1,7 +1,47 @@
 # Cable Labels: notes for agents
 
 A small mod adding a thin label for cables, modelled on the vanilla pipe label.
-[README.md](README.md) says how it works, what is still unverified, and how to build it.
+[README.md](README.md) is for players and other mods' authors; how the mod works inside is
+below.
+
+## How it works
+
+The vanilla pipe label is `Assets.Scripts.Objects.Label`, a `DevicePipeMounted`. Its text is
+drawn by the game's one shared `CursorManager.TextCamera` into a render texture on one of the
+label's materials, and redrawn on `OnRenamed`, so the Labeller works on it with no extra code.
+
+- **`CableLabel`** (`Assets/CableLabels/CableLabel.cs`) is a `DeviceCableMounted`, the base
+  the cable fuse and cable analyser use, so placement (a straight, unbroken cable on the same
+  run axis) comes for free. `Label` can't be reused because it derives from the pipe class, so
+  its drawing code is copied. Labels take turns on the text camera through `Label.HasDrawn`,
+  which `CableLabel` shares (through `AccessTools`) rather than copying, so a pipe label and a
+  cable label never draw in the same frame.
+- **The prefab** is built in code (`Assets/Editor/BuildPrefabs.cs`) with our own mesh: two
+  curved panels at 0.035 m round a 0.05 m cable, each 140° and 0.32 m long, modelled on the
+  pipe label's (two 120° panels at 0.102 m, 0.5 m long, read from the game's assets). Like the
+  pipe label it has two trigger capsules standing out past the cable's own (r 0.1), so the
+  Labeller hits the label, not the cable under it.
+- **Fitting** (`CableLabel.FitToCable`, on every cell change): a pipe label is scaled by its
+  pipe's `LabelSizeOffset`; cables have no such field, so a cable label measures the cable's
+  meshes and widens to clear it (super-heavy is 0.038 m against normal and heavy's 0.025 m).
+  Another mod's `ICableLabelMount` can give a radius or a custom mesh instead (the README's
+  "For mod authors"). The hover outline (`GetSelection`) and the capsules follow the fitted
+  mesh; `Bounds` itself stays, since the grid registers cells from it.
+- **At load**, `CableLabelPrefabs` gives the label the pipe label's material, text settings,
+  deconstruct tool and placement preview (with our mesh, and its outline's edges regenerated
+  from it), takes placement settings from a vanilla cable fuse, and makes its kit,
+  `ItemCableLabel`, as a copy of the pipe label's (`ItemPipeLabel`) dressed in our mesh,
+  texture and icon, printed at the Electronics Printer
+  (`Assets/GameData/Recipes/cable_label.xml`). This runs in LaunchPadBooster's prefix on
+  `Prefab.LoadAll`: look prefabs up in `WorldManager.SourcePrefabs`, never
+  `Prefab.AllPrefabs`, which is still empty.
+- **Other mods' contracts.** `CableLabelMounts` finds a copy of `ICableLabelMount` on a cable by
+  full name, checks each member's signature, and compiles one forwarding delegate per member
+  per type (`System.Linq.Expressions`). `CableLabelMeshes` caches custom meshes per cable
+  prefab and refits that prefab's labels when a mount's change token is cancelled, queued on
+  the game's `UnityMainThreadDispatcher`. Both were tested outside the game (.NET Framework and
+  the Unity editor's Mono) against a separately compiled copy, and in game with SBR
+  Electrical's fencing wire.
 
 ## Commit trailers
 
