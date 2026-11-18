@@ -14,11 +14,11 @@ namespace CableLabels
     // MonoBehaviour with an OnLoaded(List<GameObject>) method and calls it with the bundles'
     // prefabs.
     //
-    // The Unity project has none of the game's assets, so its prefab is a placeholder
-    // (Assets/Editor/BuildPrefabs.cs). Here, once the game's prefabs exist, it takes the vanilla
-    // pipe label's mesh, materials and text settings, shrunk across its axis to fit a cable, and
+    // The prefab has our own mesh and icons (Assets/Editor/BuildPrefabs.cs), but the Unity
+    // project has none of the game's assets. Here, once the game's prefabs exist, the label takes
+    // the vanilla pipe label's material, text settings and placement preview (with our mesh), and
     // its placement settings from a vanilla cable fuse, the closest cable-mounted device. Its kit
-    // is a copy of the pipe label's.
+    // is a copy of the pipe label's, given our mesh, texture and icon.
     //
     // This runs in LaunchPadBooster's prefix on Prefab.LoadAll: the game's source prefabs exist
     // (WorldManager.SourcePrefabs, which PrefabUtils.FindPrefab searches), but Prefab.AllPrefabs
@@ -35,10 +35,6 @@ namespace CableLabels
         // The cable label's own kit, a copy of the pipe label's (MakeKit). Its recipe is in
         // Assets/GameData/Recipes/cable_label.xml.
         private const string KitName = "ItemCableLabel";
-
-        // How much thinner than the pipe label the sleeve is, across the cable. The length along
-        // it is unchanged. A first guess, to tune in game against a normal cable.
-        private const float Thinness = 0.5f;
 
         private static Constructor _kit;
 
@@ -101,7 +97,7 @@ namespace CableLabels
 
         private static void BorrowFromVanilla(CableLabel label)
         {
-            // The kit builds this label.
+            // The kit builds this label, whatever else is found.
             if (_kit != null)
                 _kit.BuildStructure = label;
 
@@ -116,26 +112,27 @@ namespace CableLabels
             if (fuse == null)
                 Log.LogError("No cable fuse to borrow placement settings from; keeping the builder's");
 
-            // The look: the pipe label's mesh and materials, placed as they are on the pipe label,
-            // inside the sleeve, which BuildPrefabs scales across the axis.
-            var visual = label.MeshRenderer.transform;
-            var theirs = vanilla.MeshRenderer.transform;
-            visual.GetComponent<MeshFilter>().sharedMesh = theirs.GetComponent<MeshFilter>().sharedMesh;
+            // The look: our mesh, in the pipe label's material, whose label slot the text
+            // texture replaces (CableLabel.Awake).
+            var mesh = label.MeshRenderer.GetComponent<MeshFilter>().sharedMesh;
             label.MeshRenderer.sharedMaterials = vanilla.MeshRenderer.sharedMaterials;
-            var local = vanilla.transform.worldToLocalMatrix * theirs.localToWorldMatrix;
-            visual.localPosition = local.GetColumn(3);
-            visual.localRotation = local.rotation;
-            visual.localScale = local.lossyScale;
-            visual.parent.localScale = new Vector3(Thinness, Thinness, 1f);
             label.materialLabelIndex = vanilla.materialLabelIndex;
             label.textTextureWidth = vanilla.textTextureWidth;
             label.textTextureHeight = vanilla.textTextureHeight;
-            FitCollider(label, visual);
 
-            // The placement preview and inventory icon. The preview is the pipe label's, so it
-            // shows pipe-thick until the label has its own.
-            label.Blueprint = vanilla.Blueprint;
-            label.Thumbnail = vanilla.Thumbnail;
+            // The placement preview: a copy of the pipe label's, in its hologram material, with
+            // our mesh.
+            if (vanilla.Blueprint != null)
+            {
+                var blueprint = Instantiate(vanilla.Blueprint, Holder.transform);
+                blueprint.name = label.PrefabName + "Blueprint";
+                foreach (var filter in blueprint.GetComponentsInChildren<MeshFilter>(true))
+                    filter.sharedMesh = mesh;
+                label.Blueprint = blueprint;
+            }
+
+            if (_kit != null)
+                DressKit(label, mesh);
 
             // Comes apart with what the pipe label uses; SetEntryTool made our kit the entry tool.
             var exit = vanilla.BuildStates[0].Tool;
@@ -149,30 +146,32 @@ namespace CableLabels
                 label.GridOffset = fuse.GridOffset;
                 label.SmallCollisionType = fuse.SmallCollisionType;
             }
-            // The kit's inventory icon is the pipe label kit's, from the copy.
             Log.LogInfo($"Cable label set up from {VanillaLabel}"
                 + (fuse != null ? $" and {fuse.PrefabName}" : "")
                 + (_kit != null ? $"; built from {KitName}" : "; no kit"));
         }
 
-        // The box BuildPrefabs made is a guess; fit it to the mesh as placed.
-        private static void FitCollider(CableLabel label, Transform visual)
+        // The kit is the pipe label kit's model, a loose label: give it our mesh, our texture
+        // reading "Cable Label" in place of "Pipe Label", our icon, and a collider to match.
+        private static void DressKit(CableLabel label, Mesh mesh)
         {
-            var box = label.GetComponent<BoxCollider>();
-            var mesh = visual.GetComponent<MeshFilter>().sharedMesh;
-            if (box == null || mesh == null)
-                return;
-            var b = mesh.bounds;
-            var root = label.transform;
-            var fitted = new Bounds(root.InverseTransformPoint(visual.TransformPoint(b.center)), Vector3.zero);
-            for (var i = 0; i < 8; i++)
+            if (label.KitThumbnail != null)
+                _kit.Thumbnail = label.KitThumbnail;
+            foreach (var filter in _kit.GetComponentsInChildren<MeshFilter>(true))
+                filter.sharedMesh = mesh;
+            foreach (var renderer in _kit.GetComponentsInChildren<MeshRenderer>(true))
             {
-                var corner = b.center + Vector3.Scale(b.extents,
-                    new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
-                fitted.Encapsulate(root.InverseTransformPoint(visual.TransformPoint(corner)));
+                var material = new Material(renderer.sharedMaterial) { name = KitName };
+                if (label.KitTexture != null)
+                    material.mainTexture = label.KitTexture;
+                renderer.sharedMaterial = material;
             }
-            box.center = fitted.center;
-            box.size = fitted.size;
+            var box = _kit.GetComponent<BoxCollider>();
+            if (box != null)
+            {
+                box.center = mesh.bounds.center;
+                box.size = mesh.bounds.size + Vector3.one * 0.01f;
+            }
         }
     }
 }

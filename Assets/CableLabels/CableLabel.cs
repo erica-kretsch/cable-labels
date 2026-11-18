@@ -36,6 +36,12 @@ namespace CableLabels
         public int textTextureWidth = 512;
         public int textTextureHeight = 128;
 
+        // The kit's art, carried here because LaunchPad hands OnLoaded only the bundle's
+        // GameObjects, and the kit itself is a copy made at load (CableLabelPrefabs.MakeKit).
+        [Header("Kit art")]
+        public Sprite KitThumbnail;
+        public Texture2D KitTexture;
+
         private Material _material;
         private RenderTexture _textTexture;
 

@@ -18,27 +18,30 @@ label's materials, and redrawn on `OnRenamed`, so the Labeller works on it with 
   `AccessTools`) rather than copying, so a pipe label and a cable label never draw in the same
   frame.
 - **The prefab** is built in code in the Unity project
-  ([Assets/Editor/BuildPrefabs.cs](Assets/Editor/BuildPrefabs.cs)) as a placeholder:
-  root → `Sleeve` (scaled thin across the cable) → `Visual`. The Unity project has none of the
-  game's assets.
-- **At load**, [CableLabelPrefabs](Assets/CableLabels/CableLabelPrefabs.cs) gives the
-  placeholder the pipe label's mesh, materials, text settings, thumbnail, blueprint and
-  deconstruct tool, fits the collider to the thinned mesh, takes placement settings from a
-  vanilla cable fuse, and makes its kit, `ItemCableLabel`, as a copy of the pipe label's
-  (`ItemPipeLabel`), printed at the Electronics Printer
+  ([Assets/Editor/BuildPrefabs.cs](Assets/Editor/BuildPrefabs.cs)), with our own mesh: two
+  curved panels at 0.035 m round a 0.05 m cable, each 140° and 0.32 m long, modelled on the
+  pipe label's (two 120° panels at 0.102 m, 0.5 m long, read from the game's assets). Like the
+  pipe label it has two trigger capsules standing out past the cable's own, so the Labeller
+  hits the label, not the cable under it. Icons and the kit's texture come from
+  [tools/make_art.py](tools/make_art.py).
+- **At load**, [CableLabelPrefabs](Assets/CableLabels/CableLabelPrefabs.cs) gives the label the
+  pipe label's material, text settings, deconstruct tool and placement preview (with our mesh),
+  takes placement settings from a vanilla cable fuse, and makes its kit, `ItemCableLabel`, as a
+  copy of the pipe label's (`ItemPipeLabel`) dressed in our mesh, texture and icon, printed at
+  the Electronics Printer
   ([Assets/GameData/Recipes/cable_label.xml](Assets/GameData/Recipes/cable_label.xml)).
+- **Icons must be our own.** The creative spawn menu's ImGui buttons take their ID from the
+  icon's texture, so a thing sharing a vanilla icon shares that thing's button, and only one of
+  the two can be picked.
 
 ## Status
 
-Scaffolded, not yet tried in game. Things to check first:
+Placeable in game. Still to check:
 
-- The kit is a straight copy of the pipe label kit, so it still reads "PIPE LABEL" and uses
-  that kit's icon. It wants its own texture (and probably a thinner model).
-- The thinness (`Thinness`, 0.5, in both `CableLabelPrefabs` and `BuildPrefabs`) against a
-  normal cable, and whether heavy cable wants a different size (pipes do this with
-  `Pipe.LabelSizeOffset`; cables have no such field).
-- That the pipe label's mesh is centred on its axis, which the sleeve's scaling assumes.
-- The placement preview is still the pipe label's blueprint, so it shows pipe-thick.
+- How the text reads at this size, and the panels' proportions (`Radius`, `Length`,
+  `PanelDegrees` in `BuildPrefabs`).
+- Whether heavy cable wants a bigger label (pipes do this with `Pipe.LabelSizeOffset`; cables
+  have no such field).
 
 ## Building
 
@@ -56,4 +59,4 @@ first, or build from it and pass `-SkipBuild`. See [AGENTS.md](AGENTS.md) for th
 quirks.
 
 `Assets/About/Preview.png` and `Assets/About/thumb.png` come from
-`python tools/make_images.py` (Pillow).
+`python tools/make_images.py`, and `Assets/Art/` from `python tools/make_art.py` (both Pillow).
