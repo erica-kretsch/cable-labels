@@ -49,13 +49,17 @@ referencing this mod:
    **verbatim**: same namespace (`CableLabels.Contracts`), same name, same members, public.
 2. Implement it on your cable class, or on any other component on the cable's GameObject:
    - `CableLabelRadius`: the radius in metres the label's panels sit at, or `null` to measure.
-   - `TryGetLabelMesh`: for a cable that isn't round, the label's mesh and its offset and
-     rotation in the cable's cross-section; `false` for the standard label. The comments in
-     the file give the mesh's UV layout.
+   - `TryCreateLabelMesh`: for a cable that isn't round, the label's mesh and its offset and
+     rotation in the cable's cross-section; `false` for the standard label. It's called once
+     per cable prefab and the result kept, so build the mesh there and don't cache it. Its
+     `changed` token says when the result goes stale: cancel it, from any thread, and every
+     label on that prefab refits with a new result; `CancellationToken.None` if it never
+     changes. The comments in the file give the mesh's UV layout.
 
 Cable Labels finds your copy by its full name (a copy in your assembly is a different type to
 .NET) and binds to its members by name and signature
-([CableLabelMounts.cs](Assets/CableLabels/CableLabelMounts.cs)), logging once per cable type
+([CableLabelMounts.cs](Assets/CableLabels/CableLabelMounts.cs)), caches custom meshes per
+prefab ([CableLabelMeshes.cs](Assets/CableLabels/CableLabelMeshes.cs)), and logs once per cable type
 in the BepInEx log. A copy that doesn't match is logged as an error and ignored, and your
 cables get the standard fit. If Cable Labels isn't installed, nothing reads it.
 

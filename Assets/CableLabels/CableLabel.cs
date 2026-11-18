@@ -71,10 +71,25 @@ namespace CableLabels
         // it changes).
         private Mesh _standardMesh;
 
+        // The cable prefab this label is fitted on, for CableLabelMeshes to refit it when that
+        // prefab's mesh goes stale. 0 when on none.
+        private int _fittedPrefab;
+
+        // Fits again: CableLabelMeshes calls this when this label's cable prefab changed its
+        // mount's answer.
+        internal void Refit() => FitToCable();
+
+        public override void OnDestroy()
+        {
+            CableLabelMeshes.Track(this, _fittedPrefab, 0);
+            _fittedPrefab = 0;
+            base.OnDestroy();
+        }
+
         // Fits the label to the cable under it, in order:
         //
         // 1. The cable's ICableLabelMount (CableLabelMounts), if it has one: its own mesh and
-        //    pose, for a cable that isn't round, or else
+        //    pose, for a cable that isn't round (one per cable prefab, CableLabelMeshes), or else
         // 2. its CableLabelRadius, if it gives one, or else
         // 3. the cable measured: the pipe label is scaled by its pipe's LabelSizeOffset
         //    (Label.OnGridPlaced), and cables have no such field, so this reads the cable's
@@ -104,13 +119,15 @@ namespace CableLabels
             var position = Vector3.zero;
             var rotation = Quaternion.identity;
             var scale = 1f;
+            CableLabelMeshes.Track(this, _fittedPrefab, cable.PrefabHash);
+            _fittedPrefab = cable.PrefabHash;
             CableLabelMounts.TryGet(cable, out var mount);
-            if (mount != null && mount.TryGetLabelMesh(out var custom, out var offset, out var turn)
-                && custom != null)
+            var custom = mount != null ? CableLabelMeshes.Get(cable.PrefabHash, mount) : null;
+            if (custom != null && custom.HasMesh)
             {
-                mesh = custom;
-                position = new Vector3(offset.x, offset.y, 0f);
-                rotation = turn;
+                mesh = custom.Mesh;
+                position = new Vector3(custom.Offset.x, custom.Offset.y, 0f);
+                rotation = custom.Rotation;
             }
             else
             {

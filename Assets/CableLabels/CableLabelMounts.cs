@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using Assets.Scripts.Objects.Electrical;
 using CableLabels.Contracts;
 using UnityEngine;
@@ -23,15 +24,15 @@ namespace CableLabels
     // checks every member up front rather than failing at the call.
     internal static class CableLabelMounts
     {
-        private delegate bool TryGetLabelMeshFn(object target, out Mesh mesh, out Vector3 offset,
-            out Quaternion rotation);
+        private delegate bool TryCreateLabelMeshFn(object target, out Mesh mesh,
+            out Vector3 offset, out Quaternion rotation, out CancellationToken changed);
 
         // One per implementing type: the compiled members, or null where the type has no
         // matching copy (also cached, so each type is examined once).
         private sealed class Binding
         {
             public Func<object, float?> CableLabelRadius;
-            public TryGetLabelMeshFn TryGetLabelMesh;
+            public TryCreateLabelMeshFn TryCreateLabelMesh;
         }
 
         private sealed class Adapter : ICableLabelMount
@@ -47,8 +48,9 @@ namespace CableLabels
 
             public float? CableLabelRadius => _binding.CableLabelRadius(_target);
 
-            public bool TryGetLabelMesh(out Mesh mesh, out Vector3 offset, out Quaternion rotation) =>
-                _binding.TryGetLabelMesh(_target, out mesh, out offset, out rotation);
+            public bool TryCreateLabelMesh(out Mesh mesh, out Vector3 offset,
+                out Quaternion rotation, out CancellationToken changed) =>
+                _binding.TryCreateLabelMesh(_target, out mesh, out offset, out rotation, out changed);
         }
 
         private static readonly Dictionary<Type, Binding> Bindings = new Dictionary<Type, Binding>();
@@ -95,7 +97,7 @@ namespace CableLabels
                     binding = new Binding
                     {
                         CableLabelRadius = BindRadius(copy),
-                        TryGetLabelMesh = BindTryGetLabelMesh(copy),
+                        TryCreateLabelMesh = BindTryCreateLabelMesh(copy),
                     };
                     CableLabelPrefabs.Log.LogInfo(
                         $"{type.FullName} implements {contract.FullName} ({copy.Assembly.GetName().Name})");
@@ -123,27 +125,26 @@ namespace CableLabels
             return Expression.Lambda<Func<object, float?>>(body, target).Compile();
         }
 
-        // (target, out mesh, out offset, out rotation) =>
-        //     ((Copy)target).TryGetLabelMesh(out mesh, out offset, out rotation)
-        private static TryGetLabelMeshFn BindTryGetLabelMesh(Type copy)
+        // (target, out mesh, out offset, out rotation, out changed) =>
+        //     ((Copy)target).TryCreateLabelMesh(out mesh, out offset, out rotation, out changed)
+        private static TryCreateLabelMeshFn BindTryCreateLabelMesh(Type copy)
         {
-            var name = nameof(ICableLabelMount.TryGetLabelMesh);
+            var name = nameof(ICableLabelMount.TryCreateLabelMesh);
             var parameterTypes = new[]
             {
                 typeof(Mesh).MakeByRefType(), typeof(Vector3).MakeByRefType(),
-                typeof(Quaternion).MakeByRefType(),
+                typeof(Quaternion).MakeByRefType(), typeof(CancellationToken).MakeByRefType(),
             };
             var method = copy.GetMethod(name, parameterTypes);
             if (method == null || method.ReturnType != typeof(bool)
                 || method.GetParameters().Any(p => !p.IsOut))
                 throw new MissingMemberException(copy.FullName,
-                    $"bool {name}(out Mesh, out Vector3, out Quaternion)");
+                    $"bool {name}(out Mesh, out Vector3, out Quaternion, out CancellationToken)");
             var target = Expression.Parameter(typeof(object), "target");
-            var mesh = Expression.Parameter(parameterTypes[0], "mesh");
-            var offset = Expression.Parameter(parameterTypes[1], "offset");
-            var rotation = Expression.Parameter(parameterTypes[2], "rotation");
-            var body = Expression.Call(Expression.Convert(target, copy), method, mesh, offset, rotation);
-            return Expression.Lambda<TryGetLabelMeshFn>(body, target, mesh, offset, rotation).Compile();
+            var parameters = parameterTypes.Select(t => Expression.Parameter(t)).ToArray();
+            var body = Expression.Call(Expression.Convert(target, copy), method, parameters);
+            return Expression.Lambda<TryCreateLabelMeshFn>(body, new[] { target }.Concat(parameters))
+                .Compile();
         }
     }
 }
