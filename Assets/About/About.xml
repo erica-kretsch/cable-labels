@@ -53,6 +53,8 @@ Install on the host and every client. Requires BepInEx and StationeersLaunchPad.
     [*]First release: a cable label, with its own kit from the Electronics Printer.
     [/list]
   </ChangeLog>
+  <!-- Set by LaunchPad on first publish; keeps later publishes updating the same Workshop item. -->
+  <WorkshopHandle>3842098701</WorkshopHandle>
   <Tags>
     <Tag>Quality of Life</Tag>
     <Tag>BepInEx</Tag>

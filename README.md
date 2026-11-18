@@ -20,7 +20,9 @@ with the same tool as a pipe label.
 
 ## Installing
 
-Cable Labels is a [StationeersLaunchPad](https://github.com/StationeersLaunchPad/StationeersLaunchPad)
+Subscribe on the
+[Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3842098701). Cable
+Labels is a [StationeersLaunchPad](https://github.com/StationeersLaunchPad/StationeersLaunchPad)
 mod and needs BepInEx.
 
 - **In multiplayer, install it on the host and every client.** It adds a new structure.
