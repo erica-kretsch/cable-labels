@@ -2,6 +2,7 @@ using System.Collections;
 using Assets.Scripts;
 using Assets.Scripts.Objects;
 using Assets.Scripts.Objects.Electrical;
+using Assets.Scripts.Util;
 using HarmonyLib;
 using UnityEngine;
 
@@ -89,7 +90,9 @@ namespace CableLabels
         // Fits the label to the cable under it, in order:
         //
         // 1. The cable's ICableLabelMount (CableLabelMounts), if it has one: its own mesh and
-        //    pose, for a cable that isn't round (one per cable prefab, CableLabelMeshes), or else
+        //    pose, for a cable that isn't round (one per cable prefab, CableLabelMeshes), given in
+        //    the cable's frame, so it follows the cable's roll whatever the label's own is (a
+        //    label matches the cable's run axis, IsSameOrientation, but not its roll), or else
         // 2. its CableLabelRadius, if it gives one, or else
         // 3. the cable measured: the pipe label is scaled by its pipe's LabelSizeOffset
         //    (Label.OnGridPlaced), and cables have no such field, so this reads the cable's
@@ -103,6 +106,14 @@ namespace CableLabels
         // keeps the fit it had (Cable.Break leaves mounted devices in place).
         private void FitToCable()
         {
+            // Grid events come on the main thread in practice, but nothing promises it, and
+            // meshes and transforms may only be touched there.
+            if (ThreadedManager.IsThread)
+            {
+                if (UnityMainThreadDispatcher.Exists())
+                    UnityMainThreadDispatcher.Instance().Enqueue(FitToCable);
+                return;
+            }
             if (IsCursor || MeshRenderer == null)
                 return;
             var visual = MeshRenderer.transform;
@@ -125,9 +136,13 @@ namespace CableLabels
             var custom = mount != null ? CableLabelMeshes.Get(cable.PrefabHash, mount) : null;
             if (custom != null && custom.HasMesh)
             {
+                // From the cable's frame into this label's. Along the run, the offset is
+                // dropped: the label stays in its own cell of a long cable.
+                var toLabel = Quaternion.Inverse(transform.rotation) * cable.transform.rotation;
+                var offset = toLabel * custom.Offset;
                 mesh = custom.Mesh;
-                position = new Vector3(custom.Offset.x, custom.Offset.y, 0f);
-                rotation = custom.Rotation;
+                position = new Vector3(offset.x, offset.y, 0f);
+                rotation = toLabel * custom.Rotation;
             }
             else
             {
