@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Kit (Cable Label) (CableLabelPrefabs.KitName), at the electronics printer, where the cable
+  fuse's kit is made, for what the pipe label kit costs at the pipe bender. The game loads every
+  XML under a mod's GameData/ after its prefabs (WorldManager.LoadDataFiles), so the kit exists
+  by then.
+-->
+<GameData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <ElectronicsPrinterRecipes>
+        <RecipeData>
+            <PrefabName>ItemCableLabel</PrefabName>
+            <Recipe>
+                <Time>5</Time>
+                <Energy>500</Energy>
+                <Iron>1</Iron>
+            </Recipe>
+        </RecipeData>
+    </ElectronicsPrinterRecipes>
+</GameData>

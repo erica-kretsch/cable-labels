@@ -9,7 +9,7 @@
   <!-- Steam description using steam styling tags for Steam workshop page -->
   <Description>[h1]Cable Labels[/h1]
 
-A label for cables, like the vanilla pipe label but thinner. Place it on a straight stretch of cable with the Pipe Label kit (cycle to the cable label), then name it with the Labeller.
+A label for cables, like the vanilla pipe label but thinner. Print a Cable Label kit at the Electronics Printer (1 iron), place the label on a straight stretch of cable, then name it with the Labeller.
 
 Idea by Kastuk.
 
@@ -24,7 +24,7 @@ This is a [b]StationeersLaunchPad[/b] mod. It requires BepInEx. See: https://git
   <!-- Ingame Description using TMP tags for Workshop menu -->
   <InGameDescription>
     <![CDATA[<size="30"><color=#ffa500> Cable Labels </color></size>
-A thinner pipe label for cables. Build it from the Pipe Label kit and name it with the Labeller.
+A thinner pipe label for cables. Print its kit at the Electronics Printer and name it with the Labeller.
 
 Install on the host and every client. Requires BepInEx and StationeersLaunchPad.
 ]]>
@@ -32,7 +32,7 @@ Install on the host and every client. Requires BepInEx and StationeersLaunchPad.
   <ChangeLog>
     [h3]Version 0.1.0:[/h3]
     [list]
-    [*]First version: a cable label built from the Pipe Label kit.
+    [*]First version: a cable label, with its own kit from the Electronics Printer.
     [/list]
   </ChangeLog>
   <Tags>

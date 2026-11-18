@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Assets.Scripts.Objects;
 using Assets.Scripts.Objects.Electrical;
-using Assets.Scripts.Objects.Motherboards;
 using BepInEx.Logging;
 using LaunchPadBooster;
 using LaunchPadBooster.Utils;
@@ -11,13 +10,19 @@ using UnityEngine;
 
 namespace CableLabels
 {
-    // Registers the asset bundle's cable label. LaunchPad finds any MonoBehaviour with an
-    // OnLoaded(List<GameObject>) method and calls it with the bundles' prefabs.
+    // Registers the asset bundle's cable label and makes its kit. LaunchPad finds any
+    // MonoBehaviour with an OnLoaded(List<GameObject>) method and calls it with the bundles'
+    // prefabs.
     //
     // The Unity project has none of the game's assets, so its prefab is a placeholder
     // (Assets/Editor/BuildPrefabs.cs). Here, once the game's prefabs exist, it takes the vanilla
     // pipe label's mesh, materials and text settings, shrunk across its axis to fit a cable, and
-    // its placement settings from a vanilla cable fuse, the closest cable-mounted device.
+    // its placement settings from a vanilla cable fuse, the closest cable-mounted device. Its kit
+    // is a copy of the pipe label's.
+    //
+    // This runs in LaunchPadBooster's prefix on Prefab.LoadAll: the game's source prefabs exist
+    // (WorldManager.SourcePrefabs, which PrefabUtils.FindPrefab searches), but Prefab.AllPrefabs
+    // is still empty, so never look anything up there.
     public class CableLabelPrefabs : MonoBehaviour
     {
         public static readonly Mod MOD = new Mod(ThisModInfo.AssemblyName, ThisModInfo.Version);
@@ -25,13 +30,17 @@ namespace CableLabels
         internal static readonly ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("Cable Labels");
 
         private const string VanillaLabel = "StructurePipeLabel";
+        private const string VanillaKit = "ItemPipeLabel";
 
-        // The pipe label's kit also places the cable label: one more option to cycle to.
-        private const string Kit = "ItemPipeLabel";
+        // The cable label's own kit, a copy of the pipe label's (MakeKit). Its recipe is in
+        // Assets/GameData/Recipes/cable_label.xml.
+        private const string KitName = "ItemCableLabel";
 
         // How much thinner than the pipe label the sleeve is, across the cable. The length along
         // it is unchanged. A first guess, to tune in game against a normal cable.
         private const float Thinness = 0.5f;
+
+        private static Constructor _kit;
 
         public void OnLoaded(List<GameObject> prefabs)
         {
@@ -39,8 +48,8 @@ namespace CableLabels
             {
                 MOD.AddPrefabs(prefabs);
                 MOD.SetupPrefabs<CableLabel>()
-                    .RunFunc(_ => RemoveEmptyOptions(Kit))
-                    .AddToMultiConstructorKit(Kit)
+                    .RunFunc(_ => MakeKit())
+                    .SetEntryTool(KitName)
                     .RunFunc(BorrowFromVanilla);
                 Log.LogInfo($"Cable Labels {ThisModInfo.Version}: registered {prefabs.Count} prefab(s)");
             }
@@ -50,30 +59,62 @@ namespace CableLabels
             }
         }
 
-        // The game copies every prefab at load, and a kit's copy drops its empty options
-        // (MultiConstructor.OnPrefabLoad), so an option appended after an empty one would have
-        // one index in the original and another in the copy. Electrical DC hit this with the
-        // Super Heavy coil; drop them from the original too before adding ours.
-        private static void RemoveEmptyOptions(string kitName)
+        // The kit, once: a copy of the pipe label kit's source prefab, so it is a real item with
+        // that kit's model, physics and stacking, renamed. Added to the game's source prefabs,
+        // which Prefab.LoadAll registers next, as it does the bundle's. It lives under an
+        // inactive holder, so the copy never wakes as a thing in the world. SBR Electrical makes
+        // its coils the same way (CablePrefabSet.MakeKit).
+        private static void MakeKit()
         {
-            var kit = PrefabUtils.FindPrefab<MultiConstructor>(kitName);
-            if (kit == null)
+            if (_kit != null)
+                return;
+            var vanilla = WorldManager.Instance.SourcePrefabs
+                .FirstOrDefault(t => t != null && t.PrefabName == VanillaKit);
+            if (!(vanilla is Constructor constructor))
             {
-                Log.LogError($"{kitName} isn't a multi-constructor kit; the cable label can't be built");
+                Log.LogError(vanilla == null
+                    ? $"No {VanillaKit} to copy; the cable label can't be built"
+                    : $"{VanillaKit} is a {vanilla.GetType().Name}, not a Constructor; the cable label can't be built");
                 return;
             }
-            kit.Constructables.RemoveAll(s => s == null);
+            _kit = UnityEngine.Object.Instantiate(constructor, Holder.transform);
+            _kit.name = KitName;
+            _kit.PrefabName = KitName;
+            _kit.PrefabHash = Animator.StringToHash(KitName);
+            WorldManager.Instance.SourcePrefabs.Add(_kit);
+        }
+
+        private static GameObject _holder;
+
+        private static GameObject Holder
+        {
+            get
+            {
+                if (_holder != null)
+                    return _holder;
+                _holder = new GameObject("~CableLabelsPrefabs");
+                _holder.SetActive(false);
+                DontDestroyOnLoad(_holder);
+                return _holder;
+            }
         }
 
         private static void BorrowFromVanilla(CableLabel label)
         {
+            // The kit builds this label.
+            if (_kit != null)
+                _kit.BuildStructure = label;
+
             var vanilla = PrefabUtils.FindPrefab<Label>(VanillaLabel);
-            var fuse = Prefab.AllPrefabs.OfType<CableFuse>().FirstOrDefault();
-            if (vanilla == null || vanilla.MeshRenderer == null || fuse == null)
+            var fuse = WorldManager.Instance.SourcePrefabs.OfType<CableFuse>().FirstOrDefault();
+            if (vanilla == null || vanilla.MeshRenderer == null)
             {
-                Log.LogError($"No vanilla {VanillaLabel} or cable fuse to borrow from; the cable label stays a placeholder");
+                Log.LogError($"No vanilla {VanillaLabel} (or it has no MeshRenderer) to borrow from; "
+                    + "the cable label stays a placeholder");
                 return;
             }
+            if (fuse == null)
+                Log.LogError("No cable fuse to borrow placement settings from; keeping the builder's");
 
             // The look: the pipe label's mesh and materials, placed as they are on the pipe label,
             // inside the sleeve, which BuildPrefabs scales across the axis.
@@ -96,16 +137,22 @@ namespace CableLabels
             label.Blueprint = vanilla.Blueprint;
             label.Thumbnail = vanilla.Thumbnail;
 
-            // Comes apart with what the pipe label uses; AddToMultiConstructorKit made the kit
-            // the entry tool.
+            // Comes apart with what the pipe label uses; SetEntryTool made our kit the entry tool.
             var exit = vanilla.BuildStates[0].Tool;
             label.BuildStates[0].Tool.ToolExit = exit.ToolExit;
             label.BuildStates[0].Tool.ExitTime = exit.ExitTime;
 
             // Where it sits and what it collides with, as any device mounted on a cable.
-            label.GridSize = fuse.GridSize;
-            label.GridOffset = fuse.GridOffset;
-            label.SmallCollisionType = fuse.SmallCollisionType;
+            if (fuse != null)
+            {
+                label.GridSize = fuse.GridSize;
+                label.GridOffset = fuse.GridOffset;
+                label.SmallCollisionType = fuse.SmallCollisionType;
+            }
+            // The kit's inventory icon is the pipe label kit's, from the copy.
+            Log.LogInfo($"Cable label set up from {VanillaLabel}"
+                + (fuse != null ? $" and {fuse.PrefabName}" : "")
+                + (_kit != null ? $"; built from {KitName}" : "; no kit"));
         }
 
         // The box BuildPrefabs made is a guess; fit it to the mesh as placed.

@@ -7,7 +7,12 @@
     <RecordThing>
       <Key>StructureCableLabel</Key>
       <Value>Cable Label</Value>
-      <Description>A thinner {THING:StructurePipeLabel} for a straight stretch of cable. Place it with the {THING:ItemPipeLabel}, then label the label with the {THING:ItemLabeller}.</Description>
+      <Description>A thinner {THING:StructurePipeLabel} for a straight stretch of cable. Place it with the {THING:ItemCableLabel}, then label the label with the {THING:ItemLabeller}.</Description>
+    </RecordThing>
+    <RecordThing>
+      <Key>ItemCableLabel</Key>
+      <Value>Kit (Cable Label)</Value>
+      <Description>This kit creates a {THING:StructureCableLabel}.</Description>
     </RecordThing>
   </Things>
 </Language>

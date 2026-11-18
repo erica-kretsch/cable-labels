@@ -24,13 +24,16 @@ label's materials, and redrawn on `OnRenamed`, so the Labeller works on it with 
 - **At load**, [CableLabelPrefabs](Assets/CableLabels/CableLabelPrefabs.cs) gives the
   placeholder the pipe label's mesh, materials, text settings, thumbnail, blueprint and
   deconstruct tool, fits the collider to the thinned mesh, takes placement settings from a
-  vanilla cable fuse, and adds the label to the `ItemPipeLabel` kit as a second option.
+  vanilla cable fuse, and makes its kit, `ItemCableLabel`, as a copy of the pipe label's
+  (`ItemPipeLabel`), printed at the Electronics Printer
+  ([Assets/GameData/Recipes/cable_label.xml](Assets/GameData/Recipes/cable_label.xml)).
 
 ## Status
 
 Scaffolded, not yet tried in game. Things to check first:
 
-- That `ItemPipeLabel` is a multi-constructor kit (the load logs an error if not).
+- The kit is a straight copy of the pipe label kit, so it still reads "PIPE LABEL" and uses
+  that kit's icon. It wants its own texture (and probably a thinner model).
 - The thinness (`Thinness`, 0.5, in both `CableLabelPrefabs` and `BuildPrefabs`) against a
   normal cable, and whether heavy cable wants a different size (pipes do this with
   `Pipe.LabelSizeOffset`; cables have no such field).
