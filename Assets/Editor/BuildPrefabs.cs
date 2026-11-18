@@ -52,6 +52,11 @@ namespace CableLabels.Editor
                 label.ThingTransform = root.transform;
                 label.Bounds = new Bounds(Vector3.zero, Vector3.one * 0.5f);
                 label.MeshRenderer = renderer;
+                // A small-grid device, one 0.5 m cell, as a cable's. CableLabelPrefabs takes a
+                // cable fuse's at load, but these must be valid without it: GridSize 0 divides
+                // by zero in Structure.GetLocalGridBounds.
+                label.GridSize = 0.5f;
+                label.GridOffset = 0.25f;
                 label.BuildStates = new List<BuildState>
                 {
                     new BuildState

@@ -18,8 +18,15 @@ namespace CableLabels
         // Every label in the world renders through the one TextCamera, so they take turns on
         // Label's own private HasDrawn flag, not a copy: with separate flags a pipe label and a
         // cable label could draw in the same frame and swap their text.
-        private static readonly AccessTools.FieldRef<bool> HasDrawn =
-            AccessTools.StaticFieldRefAccess<bool>(AccessTools.Field(typeof(Label), "HasDrawn"));
+        //
+        // Looked up on first use, never in a static initializer: AccessTools' own type
+        // initializer throws in the Unity editor (its Mono.Cecil isn't Harmony's), and a type
+        // whose initializer throws gets built by AddComponent without any field initializers,
+        // so the prefab saved every default as 0.
+        private static AccessTools.FieldRef<bool> _hasDrawn;
+
+        private static ref bool HasDrawn => ref (_hasDrawn ??=
+            AccessTools.StaticFieldRefAccess<bool>(AccessTools.Field(typeof(Label), "HasDrawn")))();
 
         private static readonly WaitForEndOfFrame WaitFrame = new WaitForEndOfFrame();
 
@@ -75,8 +82,8 @@ namespace CableLabels
             {
                 yield return WaitFrame;
             }
-            while (HasDrawn());
-            HasDrawn() = true;
+            while (HasDrawn);
+            HasDrawn = true;
             var cursor = CursorManager.Instance;
             cursor.TextCamera.gameObject.SetActive(true);
             cursor.TextCamera.targetTexture = _textTexture;
@@ -84,7 +91,7 @@ namespace CableLabels
             yield return WaitFrame;
             cursor.TextCamera.Render();
             cursor.TextCamera.gameObject.SetActive(false);
-            HasDrawn() = false;
+            HasDrawn = false;
         }
     }
 }

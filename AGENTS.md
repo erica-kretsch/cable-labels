@@ -37,7 +37,12 @@ Assisted-by: AGENT_NAME:MODEL_VERSION [TOOL1] [TOOL2]
   expected.
 - **Private game members** go through Harmony's `AccessTools`, since Unity compiles against the
   plain `Assembly-CSharp`, not a publicized one (`CableLabel` shares `Label.HasDrawn` this
-  way).
+  way). **Never call `AccessTools` from a static initializer** of a class a prefab uses:
+  AccessTools' own type initializer throws in the editor, so the class's does too, and
+  `AddComponent` then builds the component without running field initializers. The prefab
+  silently saves every default as 0 (here `GridSize`, which overflowed
+  `Structure.GetLocalGridBounds` in game). Look it up lazily, and check the export log for
+  `TypeInitializationException`.
 - **Reference DLLs.** `Assets/Assemblies/` holds local copies of the game's, BepInEx's and
   LaunchPad's DLLs for Unity to compile against. Only their `.meta` files are committed. On a
   fresh clone, copy each DLL named by a `.meta` there from the game's
