@@ -17,8 +17,10 @@ namespace CableLabels
     // adapter then cost about what a direct interface call does. A copy that doesn't match is
     // logged once and ignored.
     //
-    // Hand-written for this one contract. A general Implements<T, TResult> would generate the
-    // adapter type with Reflection.Emit instead.
+    // Hand-written for this one contract. A general TryAdapt<TContract> would generate the
+    // adapter type with Reflection.Emit instead. Unlike ImpromptuInterface's ActLike, which it
+    // resembles, it adapts only an object that declares a copy of the contract by name, and
+    // checks every member up front rather than failing at the call.
     internal static class CableLabelMounts
     {
         private delegate bool TryGetLabelMeshFn(object target, out Mesh mesh, out Vector3 offset,
@@ -56,7 +58,7 @@ namespace CableLabels
         {
             foreach (var component in cable.GetComponents<MonoBehaviour>())
             {
-                if (component != null && TryAdapt(component, out mount))
+                if (component != null && component.TryAdapt(out mount))
                     return true;
             }
             mount = null;
@@ -64,8 +66,10 @@ namespace CableLabels
         }
 
         // One object: our own interface, implemented directly (by a mod that references this
-        // one), or a matching copy of it, adapted.
-        internal static bool TryAdapt(object target, out ICableLabelMount mount)
+        // one), or a matching copy of it, adapted. Shaped as the general version would be
+        // (target.TryAdapt(out TContract contract)), so call sites stay the same if one is
+        // provided by a shared library.
+        internal static bool TryAdapt(this object target, out ICableLabelMount mount)
         {
             if (target is ICableLabelMount own)
             {
