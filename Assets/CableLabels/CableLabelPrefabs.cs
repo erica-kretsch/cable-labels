@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Assets.Scripts.Objects;
 using Assets.Scripts.Objects.Electrical;
+using Assets.Scripts.UI;
 using BepInEx.Logging;
 using LaunchPadBooster;
 using LaunchPadBooster.Utils;
@@ -121,13 +122,23 @@ namespace CableLabels
             label.textTextureHeight = vanilla.textTextureHeight;
 
             // The placement preview: a copy of the pipe label's, in its hologram material, with
-            // our mesh.
+            // our mesh. Its Wireframe draws the outline from edges stored with the prefab,
+            // generated from the pipe label's mesh, so they are generated again from ours with
+            // the game's own generator; otherwise a pipe-sized outline is drawn round our fill.
             if (vanilla.Blueprint != null)
             {
                 var blueprint = Instantiate(vanilla.Blueprint, Holder.transform);
                 blueprint.name = label.PrefabName + "Blueprint";
                 foreach (var filter in blueprint.GetComponentsInChildren<MeshFilter>(true))
                     filter.sharedMesh = mesh;
+                var wireframe = blueprint.GetComponent<Wireframe>();
+                if (wireframe != null)
+                {
+                    wireframe.WireframeEdges = new WireframeGenerator(blueprint.transform).Edges;
+                    wireframe.BlueprintBounds = mesh.bounds;
+                }
+                else
+                    Log.LogWarning($"{VanillaLabel}'s blueprint has no Wireframe; its outline isn't ours");
                 label.Blueprint = blueprint;
             }
 

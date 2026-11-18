@@ -53,10 +53,17 @@ Assisted-by: AGENT_NAME:MODEL_VERSION [TOOL1] [TOOL2]
   `Assets/Prefabs/` (the prefab and its mesh), and `Export.Run` runs it before every export, so
   edit the builder, never the prefab, and commit what it writes. `CableLabelPrefabs` finishes
   it at load with the pipe label's material and a cable fuse's placement settings.
-- **Art is generated.** `python tools/make_art.py` writes `Assets/Art/` (the icons and the
-  kit's texture); edit the script, not the PNGs. Every thing needs **its own icon**: the
-  creative spawn menu keys its buttons on the icon's texture, so a borrowed vanilla icon makes
-  that vanilla thing unpickable there.
+- **Art is generated; edit the generators, not the PNGs.** `python tools/make_art.py` draws
+  the kit's texture. The icons are camera renders of the mesh, as vanilla's are, by
+  `Assets/Editor/RenderIcons.cs`: run it after changing the mesh, from the editor's menu or
+  `Unity.exe -batchmode -quit -projectPath . -executeMethod CableLabels.Editor.RenderIcons.Run`
+  (**without** `-nographics`, which can't render), and commit the PNGs. Every thing needs
+  **its own icon**: the creative spawn menu keys its buttons on the icon's texture, so a
+  borrowed vanilla icon makes that vanilla thing unpickable there.
+- **A copied blueprint needs its outline regenerated.** A blueprint's `Wireframe` draws edges
+  stored with the prefab, generated from the original mesh; swapping the mesh alone leaves the
+  original's outline drawn round the new fill. `CableLabelPrefabs` regenerates them with the
+  game's `WireframeGenerator`.
 - **Reading vanilla assets.** UnityPy reads prefabs from the game's
   `rocketstation_Data/resources.assets` (the pipe label is `StructurePipeLabel`, its mesh
   `PipeLabel`); that is where the label's dimensions came from.

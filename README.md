@@ -22,10 +22,13 @@ label's materials, and redrawn on `OnRenamed`, so the Labeller works on it with 
   curved panels at 0.035 m round a 0.05 m cable, each 140° and 0.32 m long, modelled on the
   pipe label's (two 120° panels at 0.102 m, 0.5 m long, read from the game's assets). Like the
   pipe label it has two trigger capsules standing out past the cable's own, so the Labeller
-  hits the label, not the cable under it. Icons and the kit's texture come from
-  [tools/make_art.py](tools/make_art.py).
+  hits the label, not the cable under it. The icons are camera renders of the mesh, as the
+  game's are ([Assets/Editor/RenderIcons.cs](Assets/Editor/RenderIcons.cs)), running the other
+  diagonal from the pipe label's so the two are easy to tell apart; the kit's texture comes
+  from [tools/make_art.py](tools/make_art.py).
 - **At load**, [CableLabelPrefabs](Assets/CableLabels/CableLabelPrefabs.cs) gives the label the
-  pipe label's material, text settings, deconstruct tool and placement preview (with our mesh),
+  pipe label's material, text settings, deconstruct tool and placement preview (with our mesh,
+  and its outline's edges regenerated from it),
   takes placement settings from a vanilla cable fuse, and makes its kit, `ItemCableLabel`, as a
   copy of the pipe label's (`ItemPipeLabel`) dressed in our mesh, texture and icon, printed at
   the Electronics Printer
@@ -59,4 +62,6 @@ first, or build from it and pass `-SkipBuild`. See [AGENTS.md](AGENTS.md) for th
 quirks.
 
 `Assets/About/Preview.png` and `Assets/About/thumb.png` come from
-`python tools/make_images.py`, and `Assets/Art/` from `python tools/make_art.py` (both Pillow).
+`python tools/make_images.py` and the kit texture from `python tools/make_art.py` (both
+Pillow). The icons come from Unity: **Cable Labels → Render icons**, or headless without
+`-nographics` (see [AGENTS.md](AGENTS.md)).
