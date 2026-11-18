@@ -11,19 +11,23 @@ using UnityEngine;
 
 namespace CableLabels
 {
-    // Registers the asset bundle's cable label and makes its kit. LaunchPad finds any
-    // MonoBehaviour with an OnLoaded(List<GameObject>) method and calls it with the bundles'
-    // prefabs.
-    //
-    // The prefab has our own mesh and icons (Assets/Editor/BuildPrefabs.cs), but the Unity
-    // project has none of the game's assets. Here, once the game's prefabs exist, the label takes
-    // the vanilla pipe label's material, text settings and placement preview (with our mesh), and
-    // its placement settings from a vanilla cable fuse, the closest cable-mounted device. Its kit
-    // is a copy of the pipe label's, given our mesh, texture and icon.
-    //
-    // This runs in LaunchPadBooster's prefix on Prefab.LoadAll: the game's source prefabs exist
-    // (WorldManager.SourcePrefabs, which PrefabUtils.FindPrefab searches), but Prefab.AllPrefabs
-    // is still empty, so never look anything up there.
+    /// <summary>
+    /// Registers the cable label from the asset bundle and makes its kit, finishing both from the
+    /// vanilla pipe label and cable fuse.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// LaunchPad calls <see cref="OnLoaded"/> in LaunchPadBooster's prefix on
+    /// <c>Prefab.LoadAll</c>. The game's source prefabs exist by then
+    /// (<c>WorldManager.SourcePrefabs</c>, which <c>PrefabUtils.FindPrefab</c> searches), but
+    /// <c>Prefab.AllPrefabs</c> is still empty.
+    /// </para>
+    /// <para>
+    /// The Unity project has none of the game's assets, so the label takes the pipe label's
+    /// material, text settings, deconstruct tool and placement preview here, and a cable fuse's
+    /// grid settings.
+    /// </para>
+    /// </remarks>
     public class CableLabelPrefabs : MonoBehaviour
     {
         public static readonly Mod MOD = new Mod(ThisModInfo.AssemblyName, ThisModInfo.Version);
@@ -33,12 +37,12 @@ namespace CableLabels
         private const string VanillaLabel = "StructurePipeLabel";
         private const string VanillaKit = "ItemPipeLabel";
 
-        // The cable label's own kit, a copy of the pipe label's (MakeKit). Its recipe is in
-        // Assets/GameData/Recipes/cable_label.xml.
+        /// <summary>The kit's prefab name; its recipe is in GameData/Recipes/cable_label.xml.</summary>
         private const string KitName = "ItemCableLabel";
 
         private static Constructor _kit;
 
+        /// <summary>Registers the bundle's prefabs; LaunchPad calls this once.</summary>
         public void OnLoaded(List<GameObject> prefabs)
         {
             try
@@ -56,11 +60,15 @@ namespace CableLabels
             }
         }
 
-        // The kit, once: a copy of the pipe label kit's source prefab, so it is a real item with
-        // that kit's model, physics and stacking, renamed. Added to the game's source prefabs,
-        // which Prefab.LoadAll registers next, as it does the bundle's. It lives under an
-        // inactive holder, so the copy never wakes as a thing in the world. SBR Electrical makes
-        // its coils the same way (CablePrefabSet.MakeKit).
+        /// <summary>
+        /// Makes the kit once, as a renamed copy of the pipe label kit, and adds it to the game's
+        /// source prefabs.
+        /// </summary>
+        /// <remarks>
+        /// The copy keeps the vanilla kit's physics and stacking. It lives under an inactive
+        /// holder, so it never wakes as a thing in the world. SBR Electrical makes its cable
+        /// coils the same way.
+        /// </remarks>
         private static void MakeKit()
         {
             if (_kit != null)
@@ -83,6 +91,7 @@ namespace CableLabels
 
         private static GameObject _holder;
 
+        /// <summary>An inactive parent for prefabs copied at load.</summary>
         private static GameObject Holder
         {
             get
@@ -96,9 +105,11 @@ namespace CableLabels
             }
         }
 
+        /// <summary>
+        /// Finishes the label from the vanilla pipe label and a cable fuse, and dresses the kit.
+        /// </summary>
         private static void BorrowFromVanilla(CableLabel label)
         {
-            // The kit builds this label, whatever else is found.
             if (_kit != null)
                 _kit.BuildStructure = label;
 
@@ -113,18 +124,15 @@ namespace CableLabels
             if (fuse == null)
                 Log.LogError("No cable fuse to borrow placement settings from; keeping the builder's");
 
-            // The look: our mesh, in the pipe label's material, whose label slot the text
-            // texture replaces (CableLabel.Awake).
+            // Our mesh in the pipe label's material; CableLabel.Awake puts the text texture in it.
             var mesh = label.MeshRenderer.GetComponent<MeshFilter>().sharedMesh;
             label.MeshRenderer.sharedMaterials = vanilla.MeshRenderer.sharedMaterials;
             label.materialLabelIndex = vanilla.materialLabelIndex;
             label.textTextureWidth = vanilla.textTextureWidth;
             label.textTextureHeight = vanilla.textTextureHeight;
 
-            // The placement preview: a copy of the pipe label's, in its hologram material, with
-            // our mesh. Its Wireframe draws the outline from edges stored with the prefab,
-            // generated from the pipe label's mesh, so they are generated again from ours with
-            // the game's own generator; otherwise a pipe-sized outline is drawn round our fill.
+            // The placement preview: the pipe label's, with our mesh. Its Wireframe stores edges
+            // generated from the pipe label's mesh, so they're generated again from ours.
             if (vanilla.Blueprint != null)
             {
                 var blueprint = Instantiate(vanilla.Blueprint, Holder.transform);
@@ -145,12 +153,12 @@ namespace CableLabels
             if (_kit != null)
                 DressKit(label, mesh);
 
-            // Comes apart with what the pipe label uses; SetEntryTool made our kit the entry tool.
+            // Deconstructed with the pipe label's tool.
             var exit = vanilla.BuildStates[0].Tool;
             label.BuildStates[0].Tool.ToolExit = exit.ToolExit;
             label.BuildStates[0].Tool.ExitTime = exit.ExitTime;
 
-            // Where it sits and what it collides with, as any device mounted on a cable.
+            // Grid placement and collision as for any cable-mounted device.
             if (fuse != null)
             {
                 label.GridSize = fuse.GridSize;
@@ -162,8 +170,10 @@ namespace CableLabels
                 + (_kit != null ? $"; built from {KitName}" : "; no kit"));
         }
 
-        // The kit is the pipe label kit's model, a loose label: give it our mesh, our texture
-        // reading "Cable Label" in place of "Pipe Label", our icon, and a collider to match.
+        /// <summary>
+        /// Gives the kit the label's mesh, a texture reading "Cable Label", its own icon and a
+        /// collider to match.
+        /// </summary>
         private static void DressKit(CableLabel label, Mesh mesh)
         {
             if (label.KitThumbnail != null)

@@ -9,32 +9,38 @@ using UnityEngine;
 
 namespace CableLabels
 {
-    // Finds another mod's copy of ICableLabelMount on a cable and adapts it to ours.
-    //
-    // A copy compiled into another assembly is a different type, so `is ICableLabelMount` never
-    // matches it. Instead this looks for an implemented interface with our interface's full
-    // name, checks each of our members has a counterpart with the same name and signature, and
-    // compiles one forwarding delegate per member, once per implementing type. Calls through the
-    // adapter then cost about what a direct interface call does. A copy that doesn't match is
-    // logged once and ignored.
-    //
-    // Hand-written for this one contract. A general TryAdapt<TContract> would generate the
-    // adapter type with Reflection.Emit instead. Unlike ImpromptuInterface's ActLike, which it
-    // resembles, it adapts only an object that declares a copy of the contract by name, and
-    // checks every member up front rather than failing at the call.
+    /// <summary>
+    /// Finds a cable's <see cref="ICableLabelMount"/>, including another mod's copy of it, and
+    /// adapts it to this assembly's.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A copy compiled into another assembly is a different type, so it's matched by full name.
+    /// Each member must have the same name and signature; one forwarding delegate per member is
+    /// compiled once per implementing type. A copy that doesn't match is logged once and ignored.
+    /// </para>
+    /// <para>
+    /// Written for this one contract. A general <c>TryAdapt&lt;TContract&gt;</c> would generate
+    /// the adapter with Reflection.Emit. Unlike ImpromptuInterface's <c>ActLike</c>, it adapts
+    /// only an object that declares the contract by name, and checks every member up front.
+    /// </para>
+    /// </remarks>
     internal static class CableLabelMounts
     {
         private delegate bool TryCreateLabelMeshFn(object target, out Mesh mesh,
             out Vector3 offset, out Quaternion rotation, out CancellationToken changed);
 
-        // One per implementing type: the compiled members, or null where the type has no
-        // matching copy (also cached, so each type is examined once).
+        /// <summary>
+        /// The compiled members of one implementing type. Cached per type, as null where the type
+        /// has no matching copy.
+        /// </summary>
         private sealed class Binding
         {
             public Func<object, float?> CableLabelRadius;
             public TryCreateLabelMeshFn TryCreateLabelMesh;
         }
 
+        /// <summary>Forwards this assembly's contract to an object implementing a copy.</summary>
         private sealed class Adapter : ICableLabelMount
         {
             private readonly object _target;
@@ -55,7 +61,9 @@ namespace CableLabels
 
         private static readonly Dictionary<Type, Binding> Bindings = new Dictionary<Type, Binding>();
 
-        // The cable's mount: the cable itself, or another component on its GameObject.
+        /// <summary>
+        /// The cable's mount: the cable itself, or another component on its GameObject.
+        /// </summary>
         public static bool TryGet(Cable cable, out ICableLabelMount mount)
         {
             foreach (var component in cable.GetComponents<MonoBehaviour>())
@@ -67,10 +75,14 @@ namespace CableLabels
             return false;
         }
 
-        // One object: our own interface, implemented directly (by a mod that references this
-        // one), or a matching copy of it, adapted. Shaped as the general version would be
-        // (target.TryAdapt(out TContract contract)), so call sites stay the same if one is
-        // provided by a shared library.
+        /// <summary>
+        /// <paramref name="target"/> as an <see cref="ICableLabelMount"/>: itself if it implements
+        /// this assembly's, else an adapter if it implements a matching copy.
+        /// </summary>
+        /// <remarks>
+        /// Shaped as a general <c>target.TryAdapt(out TContract)</c> would be, so call sites stay
+        /// the same if a shared library provides one.
+        /// </remarks>
         internal static bool TryAdapt(this object target, out ICableLabelMount mount)
         {
             if (target is ICableLabelMount own)
@@ -83,6 +95,7 @@ namespace CableLabels
             return mount != null;
         }
 
+        /// <summary>The binding for <paramref name="type"/>, made the first time.</summary>
         private static Binding Bind(Type type)
         {
             if (Bindings.TryGetValue(type, out var cached))
@@ -114,7 +127,7 @@ namespace CableLabels
             return binding;
         }
 
-        // target => ((Copy)target).CableLabelRadius
+        /// <summary>Compiles <c>target => ((Copy)target).CableLabelRadius</c>.</summary>
         private static Func<object, float?> BindRadius(Type copy)
         {
             var property = copy.GetProperty(nameof(ICableLabelMount.CableLabelRadius));
@@ -125,8 +138,9 @@ namespace CableLabels
             return Expression.Lambda<Func<object, float?>>(body, target).Compile();
         }
 
-        // (target, out mesh, out offset, out rotation, out changed) =>
-        //     ((Copy)target).TryCreateLabelMesh(out mesh, out offset, out rotation, out changed)
+        /// <summary>
+        /// Compiles <c>(target, out ...) => ((Copy)target).TryCreateLabelMesh(out ...)</c>.
+        /// </summary>
         private static TryCreateLabelMeshFn BindTryCreateLabelMesh(Type copy)
         {
             var name = nameof(ICableLabelMount.TryCreateLabelMesh);

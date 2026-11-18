@@ -8,18 +8,22 @@ using Object = UnityEngine.Object;
 
 namespace CableLabels.Editor
 {
-    // Renders the label's and the kit's inventory icons from the real mesh with a camera, as the
-    // game's own icons are, into Assets/Art/ThumbCableLabel.png and ThumbCableLabelKit.png.
-    // BuildPrefabs imports them as sprites. Run it after changing the mesh, from the menu or
-    // headless WITHOUT -nographics, which can't render:
-    //
-    //   Unity.exe -batchmode -quit -projectPath . -executeMethod CableLabels.Editor.RenderIcons.Run
-    //
-    // The vanilla pipe label's icons look down on a label running top-left to bottom-right.
-    // Ours run bottom-left to top-right, seen from the side so the kit's text reads upright, and
-    // the placed label's has a stub of red cable through it, so the two sets don't look alike in
-    // the inventory. The icons must not be vanilla's in any case: the creative spawn menu keys
-    // its buttons on the icon's texture.
+    /// <summary>
+    /// Renders the label's and the kit's inventory icons from the mesh with a camera, into
+    /// Assets/Art/ThumbCableLabel.png and ThumbCableLabelKit.png.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Run it after changing the mesh, from the menu or headless without <c>-nographics</c>,
+    /// which can't render:
+    /// <c>Unity.exe -batchmode -quit -projectPath . -executeMethod CableLabels.Editor.RenderIcons.Run</c>.
+    /// </para>
+    /// <para>
+    /// The pipe label's icons run top-left to bottom-right; these run the other way, and the
+    /// placed label's shows a stub of cable, so the two are easy to tell apart. They must be
+    /// this mod's own: the creative spawn menu keys its buttons on the icon's texture.
+    /// </para>
+    /// </remarks>
     public static class RenderIcons
     {
         private const string Art = "Assets/Art";
@@ -50,8 +54,7 @@ namespace CableLabels.Editor
             {
                 AddPart(root, "Label", mesh, Material(Color.white, null),
                     Quaternion.identity, Vector3.one);
-                // A 0.5 m run of cable, 0.05 m across, as StructureCableStraight's mesh, scaled
-                // from the built-in cylinder's own bounds (it lies along y).
+                // 0.5 m of normal cable, 0.05 m across; the built-in cylinder lies along y.
                 var cylinder = Resources.GetBuiltinResource<Mesh>("Cylinder.fbx");
                 var size = cylinder.bounds.size;
                 AddPart(root, "Cable", cylinder, Material(new Color(0.72f, 0.13f, 0.1f), null),
@@ -66,8 +69,7 @@ namespace CableLabels.Editor
 
         private static void Render(string path, Action<GameObject> build)
         {
-            // The label's axis (z) rises to the right on screen; the camera looks at its +x
-            // panel from the side and a little above, so that panel's text is upright.
+            // The label rises to the right on screen, its +x panel facing the camera upright.
             var root = new GameObject("Icon");
             root.transform.rotation = Quaternion.Euler(-30f, 0f, 0f);
             build(root);
@@ -104,8 +106,7 @@ namespace CableLabels.Editor
             Object.DestroyImmediate(root);
         }
 
-        // Centres the camera on what it shows and fits it, with a small margin: every corner
-        // of every renderer's bounds, seen from the camera.
+        /// <summary>Centres and fits the camera on everything under <paramref name="root"/>.</summary>
         private static void Frame(Camera camera, GameObject root)
         {
             var view = camera.transform;

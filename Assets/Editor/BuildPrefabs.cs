@@ -6,16 +6,20 @@ using UnityEngine;
 
 namespace CableLabels.Editor
 {
-    // Builds the cable label prefab from code, so it is reproducible and reviewable. Run it from
-    // the menu; Export.Run runs it before every export. It overwrites the prefab and its mesh,
-    // so edit this file, not them.
-    //
-    // The mesh is ours, made here after the vanilla pipe label's (read from the game's assets
-    // with UnityPy): two curved panels either side of the pipe, open at top and bottom, each
-    // showing the whole text texture, v up the arc and u along the length, so the text reads
-    // left to right from either side. Ours is scaled down to a cable. The material stays a
-    // stand-in: CableLabelPrefabs gives it the pipe label's at load, which the Unity project
-    // doesn't have. The icons and the kit's texture come from tools/make_art.py.
+    /// <summary>
+    /// Builds the cable label prefab and its mesh into Assets/Prefabs.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="Export.Run"/> runs this before every export, and it overwrites what it built,
+    /// so edit this file, not the prefab.
+    /// </para>
+    /// <para>
+    /// The mesh follows the vanilla pipe label's, scaled down to a cable: two curved panels either
+    /// side of the axis, open at top and bottom, each showing the whole text texture. The
+    /// material is a stand-in; <c>CableLabelPrefabs</c> gives the label the pipe label's at load.
+    /// </para>
+    /// </remarks>
     public static class BuildPrefabs
     {
         private const string Folder = "Assets/Prefabs";
@@ -23,10 +27,9 @@ namespace CableLabels.Editor
 
         private const string Name = "StructureCableLabel";
 
-        // The vanilla pipe label is 0.204 m across on a pipe, 0.5 m long, each panel spanning
-        // 120°. A cable is 0.05 m across (StructureCableStraight's mesh), so the panels sit at
-        // 0.035 m. They wrap further, 140°, and are shorter, so each panel keeps about the 4:1
-        // shape of the 512 × 128 text texture; vanilla's are 2.3:1, its text drawn taller.
+        // The pipe label is 0.204 m across and 0.5 m long, its panels 120° each. A normal cable is
+        // 0.05 m across. These panels wrap further and are shorter, keeping about the 4:1 shape
+        // of the 512 × 128 text texture.
         private const float Radius = 0.035f;
         private const float Length = 0.32f;
         private const float PanelDegrees = 140f;
@@ -46,9 +49,8 @@ namespace CableLabels.Editor
                 var renderer = visual.AddComponent<MeshRenderer>();
                 renderer.sharedMaterial = PlaceholderMaterial();
 
-                // What the Labeller and the cursor hit: vanilla's two trigger capsules, either
-                // side of the axis, which stand out past the cable's own (r 0.1 about its axis)
-                // so the label is hit before the cable it sits on.
+                // What the cursor and the Labeller hit: two trigger capsules, as the pipe label's,
+                // standing out past the cable's own (r 0.1) so the label is hit first.
                 foreach (var side in new[] { -1f, 1f })
                 {
                     var capsule = root.AddComponent<CapsuleCollider>();
@@ -69,9 +71,8 @@ namespace CableLabels.Editor
                 label.Thumbnail = LoadSprite(Art + "/ThumbCableLabel.png");
                 label.KitThumbnail = LoadSprite(Art + "/ThumbCableLabelKit.png");
                 label.KitTexture = LoadTexture(Art + "/CableLabelKit.png");
-                // A small-grid device, one 0.5 m cell, as a cable's. CableLabelPrefabs takes a
-                // cable fuse's at load, but these must be valid without it: GridSize 0 divides
-                // by zero in Structure.GetLocalGridBounds.
+                // One 0.5 m small-grid cell. CableLabelPrefabs replaces these with a cable fuse's,
+                // but they must be valid without it: GridSize 0 breaks GetLocalGridBounds.
                 label.GridSize = 0.5f;
                 label.GridOffset = 0.25f;
                 label.BuildStates = new List<BuildState>
@@ -93,8 +94,9 @@ namespace CableLabels.Editor
             Debug.Log("Cable Labels: prefab built");
         }
 
-        // Two panels, centred on +x and −x, z along the cable. Front faces wind clockwise seen
-        // from outside, as Unity draws them.
+        /// <summary>
+        /// Two panels centred on ±x, z along the cable, front faces wound clockwise from outside.
+        /// </summary>
         private static Mesh LabelMesh()
         {
             var vertices = new List<Vector3>();
@@ -109,8 +111,7 @@ namespace CableLabels.Editor
                     var v = (float)i / PanelSegments;
                     var angle = Mathf.Deg2Rad * PanelDegrees * (v - 0.5f);
                     var normal = new Vector3(side * Mathf.Cos(angle), Mathf.Sin(angle), 0f);
-                    // Seen from outside, the viewer's right is +z on the +x panel and −z on
-                    // the −x one; u runs left to right.
+                    // u runs left to right as seen from outside: +z on the +x panel, −z on −x.
                     foreach (var u in new[] { 0f, 1f })
                     {
                         var z = side * (u - 0.5f) * Length;
@@ -176,7 +177,7 @@ namespace CableLabels.Editor
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material != null)
                 return material;
-            // Replaced at load by the pipe label's material (CableLabelPrefabs).
+            // Replaced at load by the pipe label's material.
             material = new Material(Shader.Find("Standard")) { color = new Color(0.9f, 0.9f, 0.8f) };
             AssetDatabase.CreateAsset(material, path);
             return material;

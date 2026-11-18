@@ -7,15 +7,18 @@ using UnityEngine;
 
 namespace CableLabels
 {
-    // The custom label meshes other mods' cables give (ICableLabelMount.TryCreateLabelMesh),
-    // one per cable prefab, and the labels fitted on each prefab, so a mesh going stale refits
-    // them.
-    //
-    // Everything here runs on the main thread. A mount may cancel its token from any thread
-    // (SBR has solver threads), so the token's callback only queues the invalidation on the
-    // game's UnityMainThreadDispatcher, whose queue is locked.
+    /// <summary>
+    /// Caches custom label meshes per cable prefab, and refits that prefab's labels when a
+    /// mesh's change token is cancelled.
+    /// </summary>
+    /// <remarks>
+    /// Everything here runs on the main thread. A token may be cancelled from any thread (SBR
+    /// Electrical's solvers run on their own), so its callback only queues the invalidation on
+    /// the game's <c>UnityMainThreadDispatcher</c>.
+    /// </remarks>
     internal static class CableLabelMeshes
     {
+        /// <summary>One cable prefab's answer from <see cref="ICableLabelMount.TryCreateLabelMesh"/>.</summary>
         internal sealed class Entry
         {
             public int PrefabHash;
@@ -30,7 +33,7 @@ namespace CableLabels
         private static readonly Dictionary<int, HashSet<CableLabel>> Labels =
             new Dictionary<int, HashSet<CableLabel>>();
 
-        // The prefab's entry, asking the mount for it the first time.
+        /// <summary>The prefab's entry, asking <paramref name="mount"/> the first time.</summary>
         public static Entry Get(int prefabHash, ICableLabelMount mount)
         {
             if (Entries.TryGetValue(prefabHash, out var entry))
@@ -39,15 +42,16 @@ namespace CableLabels
             entry.HasMesh = mount.TryCreateLabelMesh(out entry.Mesh, out entry.Offset,
                 out entry.Rotation, out var changed) && entry.Mesh != null;
             Entries[prefabHash] = entry;
-            // A token already cancelled runs this at once, which queues an invalidation like any
-            // other.
+            // A token already cancelled calls back at once, which queues an invalidation as usual.
             if (changed.CanBeCanceled)
                 entry.Registration = changed.Register(() => QueueInvalidate(entry));
             return entry;
         }
 
-        // Which prefab a label is fitted on, so an invalidation finds it. A label moves when the
-        // cable under it changes, and leaves when it's destroyed (prefabHash 0).
+        /// <summary>
+        /// Records which cable prefab a label is fitted to, so an invalidation finds it;
+        /// <paramref name="prefabHash"/> 0 removes it.
+        /// </summary>
         public static void Track(CableLabel label, int previousHash, int prefabHash)
         {
             if (previousHash == prefabHash)
@@ -67,9 +71,10 @@ namespace CableLabels
                 UnityMainThreadDispatcher.Instance().Enqueue(() => Invalidate(entry));
         }
 
+        /// <summary>Drops <paramref name="entry"/> and refits its prefab's labels.</summary>
         private static void Invalidate(Entry entry)
         {
-            // A later entry may have replaced this one already; only drop this one.
+            // A newer entry may have replaced this one already.
             if (!Entries.TryGetValue(entry.PrefabHash, out var current) || current != entry)
                 return;
             Entries.Remove(entry.PrefabHash);

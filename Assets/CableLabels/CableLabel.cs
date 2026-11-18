@@ -4,29 +4,37 @@ using Assets.Scripts;
 using Assets.Scripts.Objects;
 using Assets.Scripts.Objects.Electrical;
 using Assets.Scripts.Util;
+using CableLabels.Contracts;
 using HarmonyLib;
 using UnityEngine;
 
 namespace CableLabels
 {
-    // The vanilla pipe label (Assets.Scripts.Objects.Label) on a cable mount. Label derives from
-    // DevicePipeMounted, so it can't be reused: its text drawing is copied here, and placement
-    // comes from DeviceCableMounted, which the cable fuse and cable analyser already use (a
-    // straight, unbroken cable in the same orientation).
+    /// <summary>
+    /// A label mounted on a straight cable, showing its name on both sides; the cable counterpart
+    /// of the vanilla pipe label.
+    /// </summary>
+    /// <remarks>
+    /// Placement comes from <see cref="DeviceCableMounted"/>, as for the cable fuse. The text
+    /// drawing is copied from <see cref="Label"/>, which can't be reused because it derives from
+    /// <c>DevicePipeMounted</c>.
+    /// </remarks>
     public class CableLabel : DeviceCableMounted
     {
+        /// <summary>The text a label shows until it's named.</summary>
         public const string DefaultString = "Cable Label";
 
-        // Every label in the world renders through the one TextCamera, so they take turns on
-        // Label's own private HasDrawn flag, not a copy: with separate flags a pipe label and a
-        // cable label could draw in the same frame and swap their text.
-        //
-        // Looked up on first use, never in a static initializer: AccessTools' own type
-        // initializer throws in the Unity editor (its Mono.Cecil isn't Harmony's), and a type
-        // whose initializer throws gets built by AddComponent without any field initializers,
-        // so the prefab saved every default as 0.
         private static AccessTools.FieldRef<bool> _hasDrawn;
 
+        /// <summary>
+        /// <see cref="Label"/>'s private flag for the one shared text camera, which pipe and cable
+        /// labels take turns on.
+        /// </summary>
+        /// <remarks>
+        /// Looked up on first use: AccessTools' type initializer throws in the Unity editor, and
+        /// calling it from a static initializer here made <c>AddComponent</c> skip every field
+        /// initializer, so the prefab was saved with all defaults 0.
+        /// </remarks>
         private static ref bool HasDrawn => ref (_hasDrawn ??=
             AccessTools.StaticFieldRefAccess<bool>(AccessTools.Field(typeof(Label), "HasDrawn")))();
 
@@ -38,8 +46,8 @@ namespace CableLabels
         public int textTextureWidth = 512;
         public int textTextureHeight = 128;
 
-        // The kit's art, carried here because LaunchPad hands OnLoaded only the bundle's
-        // GameObjects, and the kit itself is a copy made at load (CableLabelPrefabs.MakeKit).
+        // Art for the kit, which is made at load (CableLabelPrefabs) and so has no prefab of its
+        // own to carry it.
         [Header("Kit art")]
         public Sprite KitThumbnail;
         public Texture2D KitTexture;
@@ -58,27 +66,24 @@ namespace CableLabels
             ChangeText(DefaultString);
         }
 
-        // How far the panels stand off the cable's surface when they have to grow to clear it.
+        /// <summary>Gap between a widened label and the cable's surface, in metres.</summary>
         private const float Clearance = 0.01f;
 
-        // DeviceCableMounted calls this whenever the cell changes: placed, loaded, registered,
-        // or the cable under it replaced.
+        /// <inheritdoc />
+        /// <remarks>Refits the label whenever its cell changes.</remarks>
         public override void CheckForCable()
         {
             base.CheckForCable();
             FitToCable();
         }
 
-        // The label's own mesh, kept to go back to if a custom one is replaced (the cable under
-        // it changes).
+        /// <summary>The prefab's own mesh, restored when a custom mesh no longer applies.</summary>
         private Mesh _standardMesh;
 
-        // The cable prefab this label is fitted on, for CableLabelMeshes to refit it when that
-        // prefab's mesh goes stale. 0 when on none.
+        /// <summary>Prefab hash of the cable this label is fitted to; 0 when none.</summary>
         private int _fittedPrefab;
 
-        // Fits again: CableLabelMeshes calls this when this label's cable prefab changed its
-        // mount's answer.
+        /// <summary>Fits the label to its cable again.</summary>
         internal void Refit() => FitToCable();
 
         public override void OnDestroy()
@@ -88,27 +93,25 @@ namespace CableLabels
             base.OnDestroy();
         }
 
-        // Fits the label to the cable under it, in order:
-        //
-        // 1. The cable's ICableLabelMount (CableLabelMounts), if it has one: its own mesh and
-        //    pose, for a cable that isn't round (one per cable prefab, CableLabelMeshes), given in
-        //    the cable's frame in case the cable isn't rotationally symmetric of order 4 (a label
-        //    matches the cable's run axis, IsSameOrientation, but not its roll), or else
-        // 2. its CableLabelRadius, if it gives one, or else
-        // 3. the cable measured: the pipe label is scaled by its pipe's LabelSizeOffset
-        //    (Label.OnGridPlaced), and cables have no such field, so this reads the cable's
-        //    meshes' bounds in this label's space. The panels sit at 0.035 m, clear of normal
-        //    and heavy cable (0.025 m), but super-heavy is 0.038 m: then they widen to stand
-        //    Clearance off it.
-        //
-        // The label only ever widens across the cable, never along it, so it stays within its
-        // cell. Then the hover outline and the colliders follow the mesh as fitted (FitSelection).
-        // A burnt cable is a CableRuptured, not a Cable, so the cell has no cable and the label
-        // keeps the fit it had (Cable.Break leaves mounted devices in place).
+        /// <summary>
+        /// Fits the label to the cable in its cell: the cable's custom mesh if it gives one, else
+        /// its <see cref="ICableLabelMount.CableLabelRadius"/>, else the cable measured.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A custom mesh is posed in the cable's frame, since a label follows the cable's run axis
+        /// but not its roll. The standard mesh only ever widens across the cable, to stand
+        /// <see cref="Clearance"/> off it, so it stays within its cell: the panels sit at
+        /// 0.035 m, clear of normal and heavy cable (0.025 m) but not super-heavy (0.038 m).
+        /// </para>
+        /// <para>
+        /// A burnt cable is a <c>CableRuptured</c>, not a <see cref="Cable"/>, so the label keeps
+        /// its fit until the cable is rebuilt.
+        /// </para>
+        /// </remarks>
         private void FitToCable()
         {
-            // Grid events come on the main thread in practice, but nothing promises it, and
-            // meshes and transforms may only be touched there.
+            // Meshes and transforms may only be touched on the main thread.
             if (ThreadedManager.IsThread)
             {
                 if (UnityMainThreadDispatcher.Exists())
@@ -137,8 +140,8 @@ namespace CableLabels
             var custom = mount != null ? CableLabelMeshes.Get(cable.PrefabHash, mount) : null;
             if (custom != null && custom.HasMesh)
             {
-                // From the cable's frame into this label's. Along the run, the offset is
-                // dropped: the label stays in its own cell of a long cable.
+                // From the cable's frame into the label's; the label stays in its own cell, so
+                // any offset along the run is dropped.
                 var toLabel = Quaternion.Inverse(transform.rotation) * cable.transform.rotation;
                 var offset = toLabel * custom.Offset;
                 mesh = custom.Mesh;
@@ -160,18 +163,19 @@ namespace CableLabels
             FitSelection(visual, mesh);
         }
 
-        // The fitted mesh's bounds in this label's frame: the hover outline (GetSelection).
-        // Null until the label has been fitted, when the prefab's Bounds serve.
+        /// <summary>The fitted mesh's bounds in the label's frame; null until fitted.</summary>
         private Bounds? _selectionBounds;
 
-        // The colliders' prefab lengths and centres, kept to go back to.
+        // The trigger capsules and their prefab placement, restored for the standard mesh.
         private CapsuleCollider[] _capsules;
         private float[] _capsuleHeights;
         private Vector3[] _capsuleCentres;
 
-        // The outline is Thing.Bounds unless GetSelection says otherwise. Bounds itself is left
-        // alone, since the grid reads it to register the label's cells
-        // (Structure.GetLocalGridBounds); only what's drawn on hover follows the mesh.
+        /// <inheritdoc />
+        /// <remarks>
+        /// The hover outline follows the fitted mesh. <see cref="Thing.Bounds"/> is left as the
+        /// prefab's, since the grid registers the label's cells from it.
+        /// </remarks>
         public override SelectionInstance GetSelection()
         {
             var selection = base.GetSelection();
@@ -180,19 +184,22 @@ namespace CableLabels
             return selection;
         }
 
-        // The outline and the colliders follow the mesh as fitted. The two trigger capsules keep
-        // their radius and their distance either side of the mesh, reaching 0.2 m across the
-        // cable, past any cable's own colliders (vanilla's r 0.1, SBR fencing wire's 0.1 m box),
-        // so the label is hit before the cable it sits on. Along the run they shrink to the
-        // mesh's extent, so a custom mesh in part of the cell leaves the rest (a fencing spacer)
-        // to the cable.
-        //
-        // The standard label's panels face its ±x, so its capsules sit there. A custom mesh can
-        // face any way in this label's frame (it's posed in the cable's, and the label's roll is
-        // the player's), so its capsules go either side of its thinnest axis across the run,
-        // the way its text faces: above and below SBR's fencing plate, not over its wires. The
-        // axis is found in the mesh's own space and turned into this label's, so it holds at
-        // any roll.
+        /// <summary>
+        /// Fits the hover outline and the two trigger capsules to the mesh as placed.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The capsules keep their radius and their distance either side of the mesh, reaching
+        /// 0.2 m across the cable, past a vanilla cable's own colliders (r 0.1), so the label is
+        /// hit before the cable. Along the run they cover only the mesh's length, leaving the
+        /// rest of the cell to the cable.
+        /// </para>
+        /// <para>
+        /// The standard mesh faces ±x. A custom mesh's capsules go either side of
+        /// <see cref="FacingAcrossRun"/>: on SBR Electrical's fencing wire, above and below the
+        /// plate between its wires rather than over the wires.
+        /// </para>
+        /// </remarks>
         private void FitSelection(Transform visual, Mesh mesh)
         {
             var b = mesh.bounds;
@@ -231,8 +238,11 @@ namespace CableLabels
             }
         }
 
-        // The direction a custom mesh's text faces, in this label's frame: of the mesh's own
-        // axes that lie across the run (z), the one along which the mesh is thinnest.
+        /// <summary>
+        /// The direction a custom mesh faces, in the label's frame: the mesh's thinnest own axis
+        /// across the run.
+        /// </summary>
+        /// <remarks>Taken from the mesh's own axes, so it holds at any roll.</remarks>
         private static Vector3 FacingAcrossRun(Transform visual, Mesh mesh)
         {
             var size = mesh.bounds.size;
@@ -251,7 +261,7 @@ namespace CableLabels
             return facing.sqrMagnitude > 1e-6f ? facing.normalized : Vector3.right;
         }
 
-        // How far the cable's meshes reach from its axis, in this label's space.
+        /// <summary>How far the cable's meshes reach from its axis, in the label's frame.</summary>
         private float MeasureCableRadius(Cable cable)
         {
             var radius = 0f;
@@ -289,6 +299,7 @@ namespace CableLabels
             ChangeText(DisplayName);
         }
 
+        /// <summary>Redraws the label's text.</summary>
         public void ChangeText(string labelText)
         {
             if (GameManager.IsBatchMode)
@@ -296,7 +307,7 @@ namespace CableLabels
             StartCoroutine(Draw(labelText));
         }
 
-        // As Label.Draw.
+        /// <summary>Renders the text into the label's texture, as <c>Label.Draw</c> does.</summary>
         private IEnumerator Draw(string labelText)
         {
             do

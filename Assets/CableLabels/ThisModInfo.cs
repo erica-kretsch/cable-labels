@@ -1,7 +1,7 @@
 namespace CableLabels
 {
-    // The mod's identity, for LaunchPadBooster. Keep Version in step with
-    // Assets/About/About.xml.
+    /// <summary>The mod's identity, for LaunchPadBooster.</summary>
+    /// <remarks>Keep <see cref="Version"/> in step with Assets/About/About.xml.</remarks>
     internal static class ThisModInfo
     {
         public const string ModID = "cable-labels";
