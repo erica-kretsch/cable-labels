@@ -46,9 +46,18 @@ label's materials, and redrawn on `OnRenamed`, so the Labeller works on it with 
 
 ## Fitting labels to other mods' cables
 
-A label measures the cable it's on, which suits any round cable, modded or not. A mod whose
-cables aren't round (say, a pair of bare conductors) can tell labels how to fit them without
-referencing this mod:
+**Most mods need nothing:** a label measures the cable it's on, from how far the cable's meshes
+reach from its axis, which suits any round cable, modded or not. A mod can tell labels how to
+fit its cables, without referencing this mod, when that doesn't work:
+
+- **The meshes reach further than the cable itself,** say a slack loop coiled on a snowshoe.
+  Measuring would size the label to the coil, so give the cable's own radius in
+  `CableLabelRadius`, and return `false` with `CancellationToken.None` from
+  `TryCreateLabelMesh`.
+- **The cable isn't round,** say a pair of bare conductors. Return a mesh of your own from
+  `TryCreateLabelMesh`.
+
+To do either:
 
 1. Copy [ICableLabelMount.cs](Assets/CableLabels/Contracts/ICableLabelMount.cs) into your mod
    **verbatim**: same namespace (`CableLabels.Contracts`), same name, same members, public.
@@ -66,8 +75,8 @@ referencing this mod:
 Cable Labels finds your copy by its full name (a copy in your assembly is a different type to
 .NET) and binds to its members by name and signature
 ([CableLabelMounts.cs](Assets/CableLabels/CableLabelMounts.cs)), caches custom meshes per
-prefab ([CableLabelMeshes.cs](Assets/CableLabels/CableLabelMeshes.cs)), and logs once per cable type
-in the BepInEx log. A copy that doesn't match is logged as an error and ignored, and your
+prefab ([CableLabelMeshes.cs](Assets/CableLabels/CableLabelMeshes.cs)), and logs once per
+cable type in the BepInEx log. A copy that doesn't match is logged as an error and ignored, and your
 cables get the standard fit. If Cable Labels isn't installed, nothing reads it.
 
 The interface never changes; a later version would be a second one beside it.
