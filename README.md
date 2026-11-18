@@ -59,7 +59,9 @@ referencing this mod:
      per cable prefab and the result kept, so build the mesh there and don't cache it. Its
      `changed` token says when the result goes stale: cancel it, from any thread, and every
      label on that prefab refits with a new result; `CancellationToken.None` if it never
-     changes. The comments in the file give the mesh's UV layout.
+     changes. The comments in the file give the mesh's UV layout. The label's hover outline
+     and its hit area follow the mesh as placed: the hit area keeps reaching 0.2 m across the
+     cable, past the cable's own colliders, but only along the mesh's length.
 
 Cable Labels finds your copy by its full name (a copy in your assembly is a different type to
 .NET) and binds to its members by name and signature

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using Assets.Scripts;
 using Assets.Scripts.Objects;
 using Assets.Scripts.Objects.Electrical;
@@ -101,7 +102,7 @@ namespace CableLabels
         //    Clearance off it.
         //
         // The label only ever widens across the cable, never along it, so it stays within its
-        // cell. Its colliders stay as they are, already wider than any vanilla cable's (r 0.1).
+        // cell. Then the hover outline and the colliders follow the mesh as fitted (FitSelection).
         // A burnt cable is a CableRuptured, not a Cable, so the cell has no cable and the label
         // keeps the fit it had (Cable.Break leaves mounted devices in place).
         private void FitToCable()
@@ -156,6 +157,63 @@ namespace CableLabels
             visual.localPosition = position;
             visual.localRotation = rotation;
             visual.localScale = new Vector3(scale, scale, 1f);
+            FitSelection(visual, mesh);
+        }
+
+        // The fitted mesh's bounds in this label's frame: the hover outline (GetSelection).
+        // Null until the label has been fitted, when the prefab's Bounds serve.
+        private Bounds? _selectionBounds;
+
+        // The colliders' prefab lengths and centres, kept to go back to.
+        private CapsuleCollider[] _capsules;
+        private float[] _capsuleHeights;
+        private Vector3[] _capsuleCentres;
+
+        // The outline is Thing.Bounds unless GetSelection says otherwise. Bounds itself is left
+        // alone, since the grid reads it to register the label's cells
+        // (Structure.GetLocalGridBounds); only what's drawn on hover follows the mesh.
+        public override SelectionInstance GetSelection()
+        {
+            var selection = base.GetSelection();
+            if (_selectionBounds is Bounds bounds)
+                selection.Bounds = bounds;
+            return selection;
+        }
+
+        // The outline and the colliders follow the mesh as fitted. The two trigger capsules keep
+        // their radius and their offset either side of the axis, reaching 0.2 m across it, past
+        // any cable's own colliders (vanilla's r 0.1, SBR fencing wire's 0.1 m box), so the label
+        // is hit before the cable it sits on. Along the run they shrink to the mesh's extent, so
+        // a custom mesh in part of the cell leaves the rest (a fencing spacer) to the cable.
+        private void FitSelection(Transform visual, Mesh mesh)
+        {
+            var b = mesh.bounds;
+            var fitted = new Bounds(transform.InverseTransformPoint(visual.TransformPoint(b.center)),
+                Vector3.zero);
+            for (var i = 0; i < 8; i++)
+            {
+                var corner = b.center + Vector3.Scale(b.extents, new Vector3(
+                    (i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                fitted.Encapsulate(transform.InverseTransformPoint(visual.TransformPoint(corner)));
+            }
+            _selectionBounds = fitted;
+
+            if (_capsules == null)
+            {
+                _capsules = GetComponents<CapsuleCollider>();
+                _capsuleHeights = _capsules.Select(c => c.height).ToArray();
+                _capsuleCentres = _capsules.Select(c => c.center).ToArray();
+            }
+            var standard = mesh == _standardMesh;
+            for (var i = 0; i < _capsules.Length; i++)
+            {
+                var capsule = _capsules[i];
+                var centre = _capsuleCentres[i];
+                capsule.center = standard ? centre : new Vector3(centre.x, centre.y, fitted.center.z);
+                capsule.height = standard
+                    ? _capsuleHeights[i]
+                    : Mathf.Max(fitted.size.z + 0.05f, 2f * capsule.radius);
+            }
         }
 
         // How far the cable's meshes reach from its axis, in this label's space.
