@@ -48,12 +48,32 @@ namespace CableLabels
         public override void Awake()
         {
             base.Awake();
+            if (IsCursor || IsCursorCreating)
+            {
+                DropCursorVisual();
+                return;
+            }
             _textTexture = new RenderTexture(textTextureWidth, textTextureHeight, 0);
             if (MeshRenderer == null)
                 return;
             _material = MeshRenderer.materials[materialLabelIndex];
             _material.mainTexture = _textTexture;
             ChangeText(DefaultString);
+        }
+
+        // The construction cursor is a copy of this prefab showing the blueprint instead. Its
+        // code (InventoryManager) destroys the copy's Renderers before adding the blueprint, but
+        // the copy is made inactive, so this Awake, which fills Renderers, hasn't run yet: the
+        // label's own mesh survived and drew inside the blueprint, and its text texture redrew
+        // through the shared TextCamera, so it came and went. A cursor drops its own mesh and
+        // never draws text.
+        private void DropCursorVisual()
+        {
+            if (MeshRenderer == null)
+                return;
+            Renderers.RemoveAll(r => r.IsCurrentRenderer(MeshRenderer));
+            Destroy(MeshRenderer.gameObject);
+            MeshRenderer = null;
         }
 
         public override void DeserializeSave(ThingSaveData savedData)
@@ -76,7 +96,8 @@ namespace CableLabels
 
         public void ChangeText(string labelText)
         {
-            if (GameManager.IsBatchMode)
+            // No texture on a cursor (DropCursorVisual) or in batch mode: nothing to draw into.
+            if (GameManager.IsBatchMode || _textTexture == null)
                 return;
             StartCoroutine(Draw(labelText));
         }
