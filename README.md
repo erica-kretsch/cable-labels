@@ -84,11 +84,13 @@ The interface never changes; a later version would be a second one beside it.
 
 ## Status
 
-Placeable in game. Still to check:
+Checked in game on a clean install (2026-11-18): the kit prints and places, the Labeller
+renames labels, the creative menu picks both its own and the pipe label's kits, labels fit
+normal, heavy and super-heavy cable, the placement outline is a single layer, and labels keep
+their names and fit across a save and reload.
 
-- How the text reads at this size, and the panels' proportions (`Radius`, `Length`,
-  `PanelDegrees` in `BuildPrefabs`).
-- How the label looks once widened to clear super-heavy cable.
+The custom-mesh path (`ICableLabelMount`) has been tried with SBR Electrical's fencing wire
+during development, not yet with a released SBR.
 
 ## Building
 
