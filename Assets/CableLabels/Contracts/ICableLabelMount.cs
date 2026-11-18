@@ -18,7 +18,8 @@ namespace CableLabels.Contracts
     {
         // The radius, in metres, the label's panels should sit at on this cable. Null to let
         // the label measure the cable's meshes, which suits any round cable. Read again every
-        // time a label refits.
+        // time a label refits. Ignored when TryCreateLabelMesh returns true, since a custom mesh
+        // sits where it's posed.
         float? CableLabelRadius { get; }
 
         // For a cable that isn't round: the mesh the label should use on it, and that mesh's
