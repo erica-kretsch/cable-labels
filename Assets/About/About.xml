@@ -3,7 +3,7 @@
   <Name>Cable Labels</Name>
   <Author>erica-kretsch</Author>
   <ModID>cable-labels</ModID>
-  <Version>0.1.0</Version>
+  <Version>1.0.0</Version>
   <!-- A new structure: host and clients must all have it. -->
   <ModSide>Both</ModSide>
   <!-- Steam description using steam styling tags for Steam workshop page -->
@@ -30,9 +30,9 @@ Install on the host and every client. Requires BepInEx and StationeersLaunchPad.
 ]]>
   </InGameDescription>
   <ChangeLog>
-    [h3]Version 0.1.0:[/h3]
+    [h3]Version 1.0.0:[/h3]
     [list]
-    [*]First version: a cable label, with its own kit from the Electronics Printer.
+    [*]First release: a cable label, with its own kit from the Electronics Printer.
     [/list]
   </ChangeLog>
   <Tags>
