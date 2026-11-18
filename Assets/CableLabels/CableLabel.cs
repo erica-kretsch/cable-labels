@@ -56,6 +56,52 @@ namespace CableLabels
             ChangeText(DefaultString);
         }
 
+        // How far the panels stand off the cable's surface when they have to grow to clear it.
+        private const float Clearance = 0.01f;
+
+        // DeviceCableMounted calls this whenever the cell changes: placed, loaded, registered,
+        // or the cable under it replaced.
+        public override void CheckForCable()
+        {
+            base.CheckForCable();
+            FitToCable();
+        }
+
+        // The pipe label is scaled by its pipe's LabelSizeOffset (Label.OnGridPlaced); cables
+        // have no such field, so this measures the cable instead, from its meshes' bounds in
+        // this label's space. The panels sit at 0.035 m, clear of normal and heavy cable
+        // (0.025 m), but super-heavy is 0.038 m and burnt cable bulges to about 0.05 m: then they
+        // widen across the cable, not along it, so the label stays within its cell. Its
+        // colliders stay as they are, already wider than any vanilla cable's (r 0.1).
+        private void FitToCable()
+        {
+            if (IsCursor || MeshRenderer == null)
+                return;
+            var visual = MeshRenderer.transform;
+            var filterOwn = visual.GetComponent<MeshFilter>();
+            var cable = SmallCell?.Cable;
+            if (filterOwn == null || filterOwn.sharedMesh == null || cable == null)
+                return;
+            var mesh = filterOwn.sharedMesh;
+            var cableRadius = 0f;
+            foreach (var filter in cable.GetComponentsInChildren<MeshFilter>())
+            {
+                if (filter.sharedMesh == null || filter.GetComponent<Renderer>() == null)
+                    continue;
+                var b = filter.sharedMesh.bounds;
+                for (var i = 0; i < 8; i++)
+                {
+                    var corner = b.center + Vector3.Scale(b.extents, new Vector3(
+                        (i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                    var p = transform.InverseTransformPoint(filter.transform.TransformPoint(corner));
+                    cableRadius = Mathf.Max(cableRadius, Mathf.Abs(p.x), Mathf.Abs(p.y));
+                }
+            }
+            var ownRadius = mesh.bounds.extents.x;
+            var scale = Mathf.Max(1f, (cableRadius + Clearance) / ownRadius);
+            visual.localScale = new Vector3(scale, scale, 1f);
+        }
+
         public override void DeserializeSave(ThingSaveData savedData)
         {
             base.DeserializeSave(savedData);
